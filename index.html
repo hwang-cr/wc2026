@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>W杯2026 賭けノート</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --felt:#11392B; --felt-dark:#0B2A20;
+    --chalk:#EAF2EC; --chalk-dim:#9FBCAC;
+    --paper:#F7F3E8; --paper-edge:#E4DCC8;
+    --ink:#222B24; --ink-soft:#6B7468;
+    --amber:#F5B82E; --amber-deep:#C98F0A;
+    --win:#2E7D4F; --lose:#C8442C;
+    --line:rgba(234,242,236,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:'Noto Sans JP',sans-serif;
+    background:radial-gradient(1200px 500px at 50% -200px,#1A4A39 0%,transparent 70%),var(--felt);
+    color:var(--chalk);min-height:100vh;padding-bottom:80px;
+  }
+  .wrap{max-width:680px;margin:0 auto;padding:0 14px}
+
+  header{border-bottom:2px solid var(--amber);padding:18px 0 14px;margin-bottom:18px}
+  .brand{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,8vw,44px);letter-spacing:.06em;line-height:1}
+  h1 .gold{color:var(--amber)}
+  .stake-tag{font-size:11px;font-weight:700;color:var(--felt-dark);background:var(--amber);padding:3px 10px;border-radius:3px;letter-spacing:.08em}
+  .board-stats{display:flex;margin-top:14px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--felt-dark)}
+  .stat{flex:1;text-align:center;padding:10px 4px;border-right:1px solid var(--line)}
+  .stat:last-child{border-right:none}
+  .stat .num{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--amber);line-height:1}
+  .stat .lbl{font-size:10px;color:var(--chalk-dim);margin-top:3px;letter-spacing:.1em}
+
+  .sec-head{display:flex;align-items:center;gap:10px;margin:26px 0 12px}
+  .sec-head h2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.1em;font-weight:400}
+  .sec-head::after{content:'';flex:1;height:1px;background:var(--line)}
+
+  .standings{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--felt-dark)}
+  .st-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px dashed var(--line)}
+  .st-row:last-child{border-bottom:none}
+  .st-rank{font-family:'Bebas Neue',sans-serif;font-size:20px;width:26px;color:var(--chalk-dim);text-align:center}
+  .st-row:first-child .st-rank{color:var(--amber)}
+  .st-name{flex:1;font-weight:700;font-size:14px}
+  .st-rec{font-size:11px;color:var(--chalk-dim);min-width:64px;text-align:right}
+  .st-yen{font-family:'Bebas Neue',sans-serif;font-size:20px;min-width:88px;text-align:right}
+  .yen-plus{color:var(--amber)} .yen-minus{color:#E07A63} .yen-zero{color:var(--chalk-dim)}
+
+  .ticket{background:var(--paper);color:var(--ink);border-radius:8px;margin-bottom:18px;position:relative;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+  .ticket::before,.ticket::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:var(--felt);top:72px}
+  .ticket::before{left:-8px} .ticket::after{right:-8px}
+  .t-head{padding:14px 18px;border-bottom:2px dashed var(--paper-edge);display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .t-match{font-weight:900;font-size:17px}
+  .t-date{font-size:11px;color:var(--ink-soft);font-weight:700;margin-top:2px}
+  .deadline{font-size:11px;font-weight:900;text-align:right;line-height:1.5}
+  .dl-open{color:var(--win)} .dl-closed{color:var(--lose)}
+  .t-body{padding:14px 18px 16px}
+  .t-cond{font-size:13px;font-weight:700;line-height:1.6;background:#EFE8D4;border-left:3px solid var(--amber-deep);padding:8px 12px;border-radius:0 4px 4px 0;margin-bottom:14px}
+  .t-cond .q{font-size:10px;color:var(--amber-deep);display:block;letter-spacing:.12em;margin-bottom:2px}
+  .t-cond .vs{color:var(--ink-soft);font-weight:400;font-size:12px}
+
+  .pick-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #ECE5D2}
+  .pick-row:last-of-type{border-bottom:none}
+  .p-name{flex:1;font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .p-btn{font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;padding:6px 2px;width:88px;border:1.5px solid #CFC6AE;border-radius:4px;background:#FBF8EF;color:var(--ink-soft);cursor:pointer;transition:all .12s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .p-btn.on-A{background:var(--win);border-color:var(--win);color:#fff}
+  .p-btn.on-B{background:#1F5276;border-color:#1F5276;color:#fff}
+  .p-btn:disabled{opacity:.85;cursor:default}
+  .p-mark{width:22px;text-align:center;font-size:14px;font-weight:900}
+  .mk-win{color:var(--win)} .mk-lose{color:var(--lose)}
+
+  .t-foot{padding:12px 18px 16px;border-top:2px dashed var(--paper-edge)}
+  .res-label{font-size:10px;font-weight:900;color:var(--ink-soft);letter-spacing:.12em;margin-bottom:8px}
+  .res-btns{display:flex;gap:8px}
+  .res-btn{flex:1;padding:10px 4px;font-size:12px;font-weight:900;border-radius:5px;cursor:pointer;border:1.5px solid var(--ink);background:#fff;color:var(--ink);font-family:'Noto Sans JP',sans-serif}
+  .settled-band{display:flex;flex-direction:column;gap:8px}
+  .settled-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .settled-tag{font-size:12px;font-weight:900;padding:4px 10px;border-radius:3px;color:#fff;background:var(--ink)}
+  .settled-tag.void{background:var(--ink-soft)}
+  .transfers{font-size:12px;font-weight:700;color:var(--ink);line-height:1.8}
+  .transfers .arrow{color:var(--amber-deep)}
+  .undo{font-size:11px;color:var(--ink-soft);background:none;border:none;text-decoration:underline;cursor:pointer;font-family:inherit;align-self:flex-end}
+  .waiting{font-size:12px;color:var(--ink-soft);font-weight:700}
+  .empty{text-align:center;color:var(--chalk-dim);font-size:13px;padding:30px 10px;border:1px dashed var(--line);border-radius:8px}
+
+  .grp-pill{display:inline-block;margin-left:8px;font-size:10px;font-weight:900;color:var(--amber-deep);border:1px solid var(--amber-deep);border-radius:3px;padding:1px 6px;vertical-align:2px}
+  .cond-set{display:flex;gap:6px;margin:6px 0 4px;flex-wrap:wrap}
+  .cond-set select{flex:1;min-width:110px;padding:8px;border-radius:4px;border:1px solid #CFC6AE;background:#FBF8EF;color:var(--ink);font-family:inherit;font-size:12px;font-weight:700}
+  .cond-go{padding:8px 16px;border:none;border-radius:4px;background:var(--amber);color:var(--felt-dark);font-weight:900;font-size:12px;cursor:pointer;font-family:inherit}
+  .cond-chg{font-size:10px;font-weight:700;color:var(--ink-soft);background:none;border:1px solid #CFC6AE;border-radius:3px;padding:1px 7px;cursor:pointer;font-family:inherit;margin-left:6px;vertical-align:1px}
+  details.future{margin-bottom:10px}
+  details.future>summary{list-style:none;cursor:pointer;background:var(--felt-dark);border:1px solid var(--line);border-radius:6px;padding:11px 14px;font-size:13px;font-weight:700;color:var(--chalk-dim)}
+  details.future>summary::before{content:'▸ ';color:var(--amber)}
+  details.future[open]>summary{margin-bottom:10px}
+  details.future[open]>summary::before{content:'▾ '}
+  details.future>summary .grp-pill{border-color:var(--chalk-dim);color:var(--chalk-dim)}
+
+  .panel{background:var(--felt-dark);border:1px solid var(--line);border-radius:8px;padding:16px}
+  .panel label{font-size:11px;color:var(--chalk-dim);letter-spacing:.08em;display:block;margin:12px 0 4px}
+  .panel label:first-child{margin-top:0}
+  .panel input,.panel select{width:100%;padding:10px 12px;border-radius:5px;border:1px solid var(--line);background:#0A231B;color:var(--chalk);font-family:inherit;font-size:14px;-webkit-appearance:none;appearance:none}
+  .panel input:focus,.panel select:focus{outline:2px solid var(--amber);outline-offset:1px}
+  .two-col{display:flex;gap:8px}
+  .two-col>div{flex:1}
+  .btn-main{width:100%;margin-top:16px;padding:12px 0;border:none;border-radius:5px;background:var(--amber);color:var(--felt-dark);font-weight:900;font-size:14px;cursor:pointer;font-family:inherit}
+  .btn-main:active{background:var(--amber-deep)}
+  .btn-sub{width:100%;margin-top:8px;padding:9px 0;border:1px solid var(--line);border-radius:5px;background:none;color:var(--chalk-dim);font-weight:700;font-size:12px;cursor:pointer;font-family:inherit}
+  .players-edit{display:flex;flex-wrap:wrap;gap:8px}
+  .players-edit input{width:calc(50% - 4px);flex:none}
+  .note{font-size:11px;color:var(--chalk-dim);margin-top:10px;line-height:1.7}
+  .cond-preview{margin-top:10px;font-size:12px;font-weight:700;color:var(--amber);min-height:18px}
+  .ov{position:fixed;inset:0;background:rgba(10,25,18,.6);display:flex;align-items:center;justify-content:center;z-index:90;padding:20px}
+  .dlg{background:var(--paper);color:var(--ink);border-radius:8px;padding:20px 18px;max-width:320px;width:100%;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+  .dlg p{font-size:14px;font-weight:700;line-height:1.6;margin-bottom:16px}
+  .dlg-btns{display:flex;gap:8px}
+  .dlg-btns button{flex:1;padding:11px 0;border-radius:5px;font-weight:900;font-size:13px;cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+  .dlg-no{background:#fff;border:1.5px solid #CFC6AE;color:var(--ink-soft)}
+  .dlg-yes{background:var(--amber);border:none;color:var(--felt-dark)}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--amber);color:var(--felt-dark);font-weight:900;font-size:13px;padding:10px 20px;border-radius:6px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:50;white-space:nowrap}
+  .toast.show{opacity:1}
+  .loading{text-align:center;padding:60px 0;color:var(--chalk-dim);font-size:13px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>W杯<span class="gold">2026</span> 賭けノート</h1>
+      <span class="stake-tag">1対戦 ¥1,000</span>
+    </div>
+    <div class="board-stats">
+      <div class="stat"><div class="num" id="statMatches">0</div><div class="lbl">消化試合</div></div>
+      <div class="stat"><div class="num" id="statMoved">¥0</div><div class="lbl">動いた金額</div></div>
+      <div class="stat"><div class="num" id="statPlayers">0</div><div class="lbl">メンバー</div></div>
+    </div>
+  </header>
+
+  <div id="connWarn" style="display:none;background:#7A2E1D;color:#FFE3D6;font-size:12px;font-weight:700;line-height:1.7;padding:12px 14px;border-radius:8px;margin-bottom:16px">
+    ⚠️ 共有帳簿に接続できてへん。このブラウザやと賭けが保存されへん。<br>
+    LINEから開いた人へ：画面右下の「…」か共有ボタンから<b>「Safariで開く」「他のブラウザで開く」</b>を押して、SafariやChromeで開き直してや。
+  </div>
+
+  <div id="loading" class="loading">帳簿を開いてる…</div>
+
+  <div id="app" style="display:none">
+    <div class="sec-head"><h2>順位表</h2></div>
+    <div class="standings" id="standings"></div>
+
+    <div class="sec-head"><h2>受付中</h2></div>
+    <div id="openMatches"></div>
+
+    <div class="sec-head"><h2>結果済み</h2></div>
+    <div id="settledMatches"></div>
+
+    <div class="sec-head"><h2>試合を追加</h2></div>
+    <div class="panel">
+      <div class="two-col">
+        <div><label>チームA（国旗OK）</label><input id="fTeamA" placeholder="🇳🇱 オランダ"></div>
+        <div><label>チームB</label><input id="fTeamB" placeholder="🇯🇵 日本"></div>
+      </div>
+      <label>キックオフ日時（日本時間で入力・締切は自動で2時間前）</label>
+      <input id="fKick" type="datetime-local">
+      <label>条件の対象チーム</label>
+      <select id="fCondTeam">
+        <option value="A">チームA</option>
+        <option value="B">チームB</option>
+      </select>
+      <label>ライン</label>
+      <select id="fMargin">
+        <option value="0">同点以上で勝ち</option>
+        <option value="1">1点差以上で勝ち</option>
+        <option value="2">2点差以上で勝ち</option>
+        <option value="3">3点差以上で勝ち</option>
+      </select>
+      <div class="cond-preview" id="condPreview"></div>
+      <button class="btn-main" id="addMatch">この条件で受付開始</button>
+    </div>
+
+    <div class="sec-head"><h2>メンバー</h2></div>
+    <div class="panel">
+      <div class="players-edit" id="playersEdit"></div>
+      <button class="btn-sub" id="addPlayer">＋ メンバー追加</button>
+      <button class="btn-main" id="savePlayers">名前を保存</button>
+      <p class="note">
+        ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに¥1,000</b>払う（例：1人外して2人的中 → 外した人は¥2,000払い）。全員同じチーム or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
+        締切：キックオフ2時間前まで変更可能。それ以降はロック。<br>
+        ※リンクを知ってる人全員が同じ帳簿をリアルタイムで見て編集できる。ログイン不要。
+      </p>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+
+/* ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+   ここにFirebaseの設定を貼り付ける（手順3でコピーするやつ）
+   例：
+   const firebaseConfig = {
+     apiKey: "AIza....",
+     authDomain: "wc2026-xxxx.firebaseapp.com",
+     databaseURL: "https://wc2026-xxxx-default-rtdb.asia-southeast1.firebasedatabase.app",
+     projectId: "wc2026-xxxx",
+     storageBucket: "wc2026-xxxx.firebasestorage.app",
+     messagingSenderId: "....",
+     appId: "...."
+   };
+   ※特に databaseURL が入ってることを確認。無かったらRealtime Databaseの画面のURLを手で足す
+★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★ */
+const firebaseConfig = {
+  // ←←← この中に貼り付け →→→
+};
+
+const STAKE = 1000;
+let state = null;
+let db = null;
+
+const FLAG = {'メキシコ':'🇲🇽','南アフリカ':'🇿🇦','韓国':'🇰🇷','チェコ':'🇨🇿','カナダ':'🇨🇦','ボスニアH':'🇧🇦','カタール':'🇶🇦','スイス':'🇨🇭','ブラジル':'🇧🇷','モロッコ':'🇲🇦','ハイチ':'🇭🇹','スコットランド':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','アメリカ':'🇺🇸','パラグアイ':'🇵🇾','オーストラリア':'🇦🇺','トルコ':'🇹🇷','ドイツ':'🇩🇪','キュラソー':'🇨🇼','コートジボワール':'🇨🇮','エクアドル':'🇪🇨','オランダ':'🇳🇱','日本':'🇯🇵','スウェーデン':'🇸🇪','チュニジア':'🇹🇳','ベルギー':'🇧🇪','エジプト':'🇪🇬','イラン':'🇮🇷','ニュージーランド':'🇳🇿','スペイン':'🇪🇸','カーボベルデ':'🇨🇻','サウジアラビア':'🇸🇦','ウルグアイ':'🇺🇾','フランス':'🇫🇷','セネガル':'🇸🇳','イラク':'🇮🇶','ノルウェー':'🇳🇴','アルゼンチン':'🇦🇷','アルジェリア':'🇩🇿','オーストリア':'🇦🇹','ヨルダン':'🇯🇴','ポルトガル':'🇵🇹','コンゴ民主共和国':'🇨🇩','ウズベキスタン':'🇺🇿','コロンビア':'🇨🇴','イングランド':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','クロアチア':'🇭🇷','ガーナ':'🇬🇭','パナマ':'🇵🇦'};
+function tn(name){ return (FLAG[name]||'') + ' ' + name; }
+function jst(s){ return new Date(s.replace(' ','T') + ':00+09:00').getTime(); }
+
+const SCHED = [
+  ['B','2026-06-13 04:00','カナダ','ボスニアH'],
+  ['D','2026-06-13 10:00','アメリカ','パラグアイ'],
+  ['B','2026-06-14 04:00','カタール','スイス'],
+  ['C','2026-06-14 07:00','ブラジル','モロッコ'],
+  ['C','2026-06-14 10:00','ハイチ','スコットランド'],
+  ['D','2026-06-14 13:00','オーストラリア','トルコ'],
+  ['E','2026-06-15 02:00','ドイツ','キュラソー'],
+  ['F','2026-06-15 05:00','オランダ','日本'],
+  ['E','2026-06-15 08:00','コートジボワール','エクアドル'],
+  ['F','2026-06-15 11:00','スウェーデン','チュニジア'],
+  ['H','2026-06-16 01:00','スペイン','カーボベルデ'],
+  ['G','2026-06-16 04:00','ベルギー','エジプト'],
+  ['H','2026-06-16 07:00','サウジアラビア','ウルグアイ'],
+  ['G','2026-06-16 10:00','イラン','ニュージーランド'],
+  ['I','2026-06-17 04:00','フランス','セネガル'],
+  ['I','2026-06-17 07:00','イラク','ノルウェー'],
+  ['J','2026-06-17 10:00','アルゼンチン','アルジェリア'],
+  ['J','2026-06-17 13:00','オーストリア','ヨルダン'],
+  ['K','2026-06-18 02:00','ポルトガル','コンゴ民主共和国'],
+  ['L','2026-06-18 05:00','イングランド','クロアチア'],
+  ['L','2026-06-18 08:00','ガーナ','パナマ'],
+  ['K','2026-06-18 11:00','ウズベキスタン','コロンビア'],
+  ['A','2026-06-19 01:00','チェコ','南アフリカ'],
+  ['B','2026-06-19 04:00','スイス','ボスニアH'],
+  ['B','2026-06-19 07:00','カナダ','カタール'],
+  ['A','2026-06-19 10:00','メキシコ','韓国'],
+  ['D','2026-06-20 04:00','アメリカ','オーストラリア'],
+  ['C','2026-06-20 07:00','スコットランド','モロッコ'],
+  ['C','2026-06-20 09:30','ブラジル','ハイチ'],
+  ['D','2026-06-20 12:00','トルコ','パラグアイ'],
+  ['F','2026-06-21 02:00','オランダ','スウェーデン'],
+  ['E','2026-06-21 05:00','ドイツ','コートジボワール'],
+  ['E','2026-06-21 09:00','エクアドル','キュラソー'],
+  ['F','2026-06-21 13:00','チュニジア','日本'],
+  ['H','2026-06-22 01:00','スペイン','サウジアラビア'],
+  ['G','2026-06-22 04:00','ベルギー','イラン'],
+  ['H','2026-06-22 07:00','ウルグアイ','カーボベルデ'],
+  ['G','2026-06-22 10:00','ニュージーランド','エジプト'],
+  ['J','2026-06-23 02:00','アルゼンチン','オーストリア'],
+  ['I','2026-06-23 06:00','フランス','イラク'],
+  ['I','2026-06-23 09:00','ノルウェー','セネガル'],
+  ['J','2026-06-23 12:00','ヨルダン','アルジェリア'],
+  ['K','2026-06-24 02:00','ポルトガル','ウズベキスタン'],
+  ['L','2026-06-24 05:00','イングランド','ガーナ'],
+  ['L','2026-06-24 08:00','パナマ','クロアチア'],
+  ['K','2026-06-24 11:00','コロンビア','コンゴ民主共和国'],
+  ['B','2026-06-25 04:00','スイス','カナダ'],
+  ['B','2026-06-25 04:00','ボスニアH','カタール'],
+  ['C','2026-06-25 07:00','モロッコ','ハイチ'],
+  ['C','2026-06-25 07:00','スコットランド','ブラジル'],
+  ['A','2026-06-25 10:00','南アフリカ','韓国'],
+  ['A','2026-06-25 10:00','チェコ','メキシコ'],
+  ['E','2026-06-26 05:00','キュラソー','コートジボワール'],
+  ['E','2026-06-26 05:00','エクアドル','ドイツ'],
+  ['F','2026-06-26 08:00','チュニジア','オランダ'],
+  ['F','2026-06-26 08:00','日本','スウェーデン'],
+  ['D','2026-06-26 11:00','トルコ','アメリカ'],
+  ['D','2026-06-26 11:00','パラグアイ','オーストラリア'],
+  ['I','2026-06-27 04:00','ノルウェー','フランス'],
+  ['I','2026-06-27 04:00','セネガル','イラク'],
+  ['H','2026-06-27 09:00','カーボベルデ','サウジアラビア'],
+  ['H','2026-06-27 09:00','ウルグアイ','スペイン'],
+  ['G','2026-06-27 12:00','ニュージーランド','ベルギー'],
+  ['G','2026-06-27 12:00','エジプト','イラン'],
+  ['L','2026-06-28 06:00','パナマ','イングランド'],
+  ['L','2026-06-28 06:00','クロアチア','ガーナ'],
+  ['K','2026-06-28 08:30','コロンビア','ポルトガル'],
+  ['K','2026-06-28 08:30','コンゴ民主共和国','ウズベキスタン'],
+  ['J','2026-06-28 11:00','アルジェリア','オーストリア'],
+  ['J','2026-06-28 11:00','ヨルダン','アルゼンチン']
+];
+
+const seedState = () => {
+  const matches = {
+    m1: { grp:'A', teamA:tn('メキシコ'), teamB:tn('南アフリカ'), condTeam:'A', margin:2,
+      kickoff: jst('2026-06-12 04:00'),
+      picks:{ 'りゅんで':'A','さんふぁん':'A','よんす':'A' }, result:'A' },
+    m2: { grp:'A', teamA:tn('韓国'), teamB:tn('チェコ'), condTeam:'B', margin:0,
+      kickoff: jst('2026-06-12 11:00'),
+      picks:{ 'りゅんで':'A','さんふぁん':'B','よんす':'A' }, result:'A' }
+  };
+  SCHED.forEach((x,i)=>{
+    matches['s'+(i+1)] = { grp:x[0], teamA:tn(x[2]), teamB:tn(x[3]), kickoff: jst(x[1]), picks:{} };
+  });
+  return { players:['りゅんで','さんふぁん','がんひょん','よんじゅ','ふぁんさ','よんす'], matches };
+};
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+function showErr(msg){
+  const w = document.getElementById('connWarn');
+  if(w){ w.innerHTML = '⚠️ ' + msg; w.style.display = 'block'; }
+  document.getElementById('loading').style.display='none';
+}
+
+/* in-app confirm dialog */
+function ask(msg){
+  return new Promise(res=>{
+    const ov = document.createElement('div');
+    ov.className = 'ov';
+    ov.innerHTML = `<div class="dlg"><p>${esc(msg)}</p>
+      <div class="dlg-btns">
+        <button class="dlg-no">やめる</button>
+        <button class="dlg-yes">OK</button>
+      </div></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('.dlg-yes').onclick = ()=>{ ov.remove(); res(true); };
+    ov.querySelector('.dlg-no').onclick = ()=>{ ov.remove(); res(false); };
+    ov.onclick = (e)=>{ if(e.target===ov){ ov.remove(); res(false); } };
+  });
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function condText(m){
+  if(m.condTeam==null || m.margin==null) return null;
+  const t = (m.condTeam==='A' ? m.teamA : m.teamB).split(' ')[0];
+  if(Number(m.margin)===0) return `同点以上で ${t} 勝ち`;
+  return `${m.margin}点差以上で ${t} 勝ち`;
+}
+function hasCond(m){ return m.condTeam!=null && m.margin!=null; }
+function deadline(m){ return m.kickoff - 2*3600*1000; }
+function isLocked(m){ return Date.now() > deadline(m); }
+function kicked(m){ return Date.now() > m.kickoff; }
+
+function matchList(){
+  const ms = state.matches || {};
+  return Object.keys(ms).map(id=>{ const m=ms[id]; m.id=id; m.picks=m.picks||{}; return m; });
+}
+
+function settle(){
+  const totals={}, records={};
+  (state.players||[]).forEach(p=>{ totals[p]=0; records[p]={w:0,l:0}; });
+  let moved = 0;
+  const info = {};
+  matchList().forEach(m=>{
+    if(!m.result) return;
+    const pickers = (state.players||[]).filter(p=>m.picks[p]);
+    const winners = pickers.filter(p=>m.picks[p]===m.result);
+    const losers  = pickers.filter(p=>m.picks[p]!==m.result);
+    if(winners.length===0 || losers.length===0){ info[m.id]={void:true,transfers:[]}; return; }
+    const transfers = [];
+    losers.forEach(l=>{
+      totals[l] -= winners.length*STAKE;
+      records[l].l++;
+      winners.forEach(w=>{ transfers.push(`${esc(l)} <span class="arrow">→</span> ${esc(w)}：¥1,000`); });
+    });
+    winners.forEach(w=>{ totals[w] += losers.length*STAKE; records[w].w++; });
+    moved += winners.length*losers.length*STAKE;
+    info[m.id] = { void:false, transfers };
+  });
+  return { totals, records, moved, info };
+}
+
+function fmtDate(ts){
+  const d = new Date(ts + 9*3600000);
+  const wd = ['日','月','火','水','木','金','土'][d.getUTCDay()];
+  return `${d.getUTCMonth()+1}/${d.getUTCDate()}（${wd}）${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')} 日本時間`;
+}
+function fmtRemain(ms){
+  if(ms<=0) return null;
+  const h = Math.floor(ms/3600000), mn = Math.floor((ms%3600000)/60000);
+  return h>0 ? `${h}時間${mn}分` : `${mn}分`;
+}
+
+function render(){
+  if(!state) return;
+  const { totals, records, moved, info } = settle();
+  const all = matchList();
+
+  document.getElementById('statMatches').textContent = all.filter(m=>m.result).length;
+  document.getElementById('statMoved').textContent = '¥'+moved.toLocaleString();
+  document.getElementById('statPlayers').textContent = (state.players||[]).length;
+
+  const ranked = [...(state.players||[])].sort((a,b)=>totals[b]-totals[a]);
+  document.getElementById('standings').innerHTML = ranked.map((p,i)=>{
+    const v=totals[p];
+    const cls=v>0?'yen-plus':v<0?'yen-minus':'yen-zero';
+    return `<div class="st-row">
+      <div class="st-rank">${i+1}</div>
+      <div class="st-name">${esc(p)}</div>
+      <div class="st-rec">${records[p].w}勝${records[p].l}敗</div>
+      <div class="st-yen ${cls}">${v>0?'+':''}¥${v.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+
+  const open = all.filter(m=>!m.result).sort((a,b)=>a.kickoff-b.kickoff);
+  const done = all.filter(m=>m.result).sort((a,b)=>b.kickoff-a.kickoff);
+  const SOON = 24*3600000;
+  document.getElementById('openMatches').innerHTML =
+    open.length ? open.map(m=>{
+      const t = ticket(m, info);
+      if(!hasCond(m) && (deadline(m)-Date.now()) > SOON){
+        return `<details class="future"><summary>${fmtDate(m.kickoff).replace(' 日本時間','')}　${esc(m.teamA)} vs ${esc(m.teamB)}<span class="grp-pill">${esc(m.grp||'')}組</span></summary>${t}</details>`;
+      }
+      return t;
+    }).join('') : `<div class="empty">受付中の試合なし。下から追加してや</div>`;
+  document.getElementById('settledMatches').innerHTML =
+    done.length ? done.map(m=>ticket(m,info)).join('') : `<div class="empty">まだ結果なし</div>`;
+
+  renderPlayersEdit();
+  bind();
+  updatePreview();
+}
+
+function ticket(m, info){
+  const settled = !!m.result;
+  const locked = isLocked(m);
+  const condSet = hasCond(m);
+  const shortA = m.teamA.split(' ')[0];
+  const shortB = m.teamB.split(' ')[0];
+
+  let rows = '';
+  if(condSet){
+    rows = (state.players||[]).map(p=>{
+      const pick = m.picks[p] || null;
+      let mark = `<span class="p-mark"></span>`;
+      if(settled && pick && info[m.id] && !info[m.id].void){
+        mark = pick===m.result
+          ? `<span class="p-mark mk-win">◎</span>`
+          : `<span class="p-mark mk-lose">✕</span>`;
+      } else if(settled && pick){
+        mark = `<span class="p-mark">−</span>`;
+      }
+      const dis = (settled||locked) ? 'disabled' : '';
+      return `<div class="pick-row">
+        <div class="p-name">${esc(p)}</div>
+        <button class="p-btn ${pick==='A'?'on-A':''}" data-side="A" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortA)}</button>
+        <button class="p-btn ${pick==='B'?'on-B':''}" data-side="B" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortB)}</button>
+        ${mark}
+      </div>`;
+    }).join('');
+  }
+
+  let dl = '';
+  if(!settled){
+    const remain = fmtRemain(deadline(m)-Date.now());
+    dl = remain
+      ? `<div class="deadline dl-open" data-dl="${m.id}">受付中<br>締切まで ${remain}</div>`
+      : `<div class="deadline dl-closed">締切済み・ロック</div>`;
+  }
+
+  let condBlock;
+  if(condSet){
+    const oppSide = m.condTeam==='A' ? shortB : shortA;
+    const chg = (!settled && !locked)
+      ? ` <button class="cond-chg" data-cclr="${m.id}">変更</button>` : '';
+    condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ${esc(condText(m))}${chg}<br>
+      <span class="vs">${esc(m.condTeam==='A'?shortA:shortB)} に賭ける＝条件どおりなら勝ち／${esc(oppSide)} に賭ける＝条件が崩れたら勝ち</span></div>`;
+  } else if(!locked) {
+    condBlock = `<div class="t-cond"><span class="q">条件を決める</span>
+      <div class="cond-set">
+        <select data-cteam="${m.id}">
+          <option value="A">${esc(shortA)}</option>
+          <option value="B">${esc(shortB)}</option>
+        </select>
+        <select data-cmargin="${m.id}">
+          <option value="0">同点以上で勝ち</option>
+          <option value="1">1点差以上で勝ち</option>
+          <option value="2">2点差以上で勝ち</option>
+          <option value="3">3点差以上で勝ち</option>
+        </select>
+        <button class="cond-go" data-cset="${m.id}">確定</button>
+      </div>
+      <span class="vs">条件を確定したら賭けられるようになる</span></div>`;
+  } else {
+    condBlock = `<div class="t-cond"><span class="q">条件</span>未設定のまま締切。この試合はノーゲーム扱いや</div>`;
+  }
+
+  let foot;
+  if(settled){
+    const i = info[m.id]||{void:true,transfers:[]};
+    const tag = i.void
+      ? `<span class="settled-tag void">ノーゲーム（対抗なし）</span>`
+      : `<span class="settled-tag">結果：${esc(m.result==='A'?shortA:shortB)} 側の勝ち</span>`;
+    const tr = i.transfers.length
+      ? `<div class="transfers">${i.transfers.join('<br>')}</div>` : '';
+    foot = `<div class="settled-band">
+      <div class="settled-top">${tag}</div>
+      ${tr}
+    </div>`;
+  } else if(kicked(m) && condSet){
+    foot = `<div class="res-label">結果入力（どっち側が勝った？）</div>
+      <div class="res-btns">
+        <button class="res-btn" data-res="A" data-m="${m.id}">${esc(shortA)} 側<br><small>条件${m.condTeam==='A'?'成立':'不成立'}</small></button>
+        <button class="res-btn" data-res="B" data-m="${m.id}">${esc(shortB)} 側<br><small>条件${m.condTeam==='B'?'成立':'不成立'}</small></button>
+      </div>`;
+  } else if(condSet){
+    foot = `<div class="waiting">キックオフ後にここで結果入力できる</div>`;
+  } else {
+    foot = `<div class="waiting">まず条件を決めてや</div>`;
+  }
+
+  return `<div class="ticket">
+    <div class="t-head">
+      <div>
+        <div class="t-match">${esc(m.teamA)} vs ${esc(m.teamB)}<span class="grp-pill">${esc(m.grp||'')}組</span></div>
+        <div class="t-date">${fmtDate(m.kickoff)}</div>
+      </div>
+      ${dl}
+    </div>
+    <div class="t-body">
+      ${condBlock}
+      ${rows}
+    </div>
+    <div class="t-foot">${foot}</div>
+  </div>`;
+}
+
+function renderCountdowns(){
+  if(!state) return;
+  document.querySelectorAll('[data-dl]').forEach(el=>{
+    const m = (state.matches||{})[el.dataset.dl];
+    if(!m) return;
+    const remain = fmtRemain((m.kickoff - 2*3600*1000)-Date.now());
+    if(!remain){ render(); return; }
+    el.innerHTML = `受付中<br>締切まで ${remain}`;
+  });
+}
+
+function renderPlayersEdit(){
+  document.getElementById('playersEdit').innerHTML =
+    (state.players||[]).map((p,i)=>`<input data-pi="${i}" value="${esc(p)}">`).join('');
+}
+
+function bind(){
+  document.querySelectorAll('.p-btn').forEach(b=>{
+    b.onclick = ()=>{
+      const m = (state.matches||{})[b.dataset.m];
+      if(!m || isLocked(m) || m.result || !hasCond(m)){ if(m&&isLocked(m)) toast('締切済み。もう変えられへん'); return; }
+      const p = b.dataset.p, side = b.dataset.side;
+      const ref = db.ref(`kakebo/matches/${b.dataset.m}/picks/${p}`);
+      if((m.picks||{})[p]===side) ref.remove(); else ref.set(side);
+    };
+  });
+  document.querySelectorAll('.res-btn').forEach(b=>{
+    b.onclick = async ()=>{
+      const m = (state.matches||{})[b.dataset.m];
+      if(!m) return;
+      const side = b.dataset.res==='A' ? m.teamA : m.teamB;
+      if(!await ask(`結果：${side} 側の勝ちで確定する？（取消はできへん）`)) return;
+      db.ref(`kakebo/matches/${b.dataset.m}/result`).set(b.dataset.res);
+      toast('記帳した');
+    };
+  });
+  document.querySelectorAll('[data-cset]').forEach(b=>{
+    b.onclick = ()=>{
+      const mid = b.dataset.cset;
+      const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
+      const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
+      db.ref(`kakebo/matches/${mid}`).update({ condTeam:ct, margin:mg });
+      toast('条件セット、受付開始や');
+    };
+  });
+  document.querySelectorAll('[data-cclr]').forEach(b=>{
+    b.onclick = async ()=>{
+      if(!await ask('条件を変更すると全員の選択もリセットされる。ええか？')) return;
+      db.ref(`kakebo/matches/${b.dataset.cclr}`).update({ condTeam:null, margin:null, picks:null });
+    };
+  });
+}
+
+function updatePreview(){
+  const a = document.getElementById('fTeamA').value.trim() || 'チームA';
+  const b = document.getElementById('fTeamB').value.trim() || 'チームB';
+  const ct = document.getElementById('fCondTeam').value;
+  const mg = Number(document.getElementById('fMargin').value);
+  const t = (ct==='A'?a:b).split(' ')[0];
+  const fa = a.split(' ')[0], fb = b.split(' ')[0];
+  const txt = mg===0 ? `同点以上で ${t} 勝ち` : `${mg}点差以上で ${t} 勝ち`;
+  document.getElementById('condPreview').textContent = `→ ${fa}vs${fb} → ${txt}`;
+}
+['fTeamA','fTeamB','fCondTeam','fMargin'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', updatePreview);
+  document.getElementById(id).addEventListener('change', updatePreview);
+});
+
+document.getElementById('addMatch').onclick = ()=>{
+  const a = document.getElementById('fTeamA').value.trim();
+  const b = document.getElementById('fTeamB').value.trim();
+  const k = document.getElementById('fKick').value;
+  if(!a || !b){ toast('チーム名を入れてや'); return; }
+  if(!k){ toast('キックオフ日時が要る（締切計算に使う）'); return; }
+  const kick = new Date(k + ':00+09:00').getTime();
+  db.ref('kakebo/matches/u'+Date.now()).set({ teamA:a, teamB:b, grp:'追加', kickoff:kick, picks:{} });
+  document.getElementById('fTeamA').value='';
+  document.getElementById('fTeamB').value='';
+  document.getElementById('fKick').value='';
+  toast('受付開始や');
+};
+
+document.getElementById('addPlayer').onclick = ()=>{
+  const wrapEl = document.getElementById('playersEdit');
+  const inp = document.createElement('input');
+  inp.dataset.pi = wrapEl.children.length;
+  inp.placeholder = '名前';
+  wrapEl.appendChild(inp);
+  inp.focus();
+};
+
+document.getElementById('savePlayers').onclick = async ()=>{
+  const inputs = document.querySelectorAll('[data-pi]');
+  const newNames = [...inputs].map(i=>i.value.trim()).filter(Boolean);
+  if(newNames.length < 2){ toast('2人以上は必要や'); return; }
+  if(new Set(newNames).size !== newNames.length){ toast('同じ名前が被ってる'); return; }
+  const updates = { 'kakebo/players': newNames };
+  Object.keys(state.matches||{}).forEach(id=>{
+    const m = state.matches[id];
+    const np = {};
+    (state.players||[]).forEach((old,i)=>{ if(newNames[i] && (m.picks||{})[old]) np[newNames[i]] = m.picks[old]; });
+    updates[`kakebo/matches/${id}/picks`] = np;
+  });
+  db.ref().update(updates);
+  toast('メンバー更新');
+};
+
+/* ── boot ── */
+(function init(){
+  if(!firebaseConfig.apiKey){
+    showErr('まだFirebaseの設定が貼られてへん。ファイル冒頭の firebaseConfig に貼り付けてや');
+    return;
+  }
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  }catch(e){
+    showErr('Firebase設定がおかしいかも：' + esc(e.message));
+    return;
+  }
+  let seeded = false;
+  db.ref('kakebo').on('value', snap=>{
+    const v = snap.val();
+    if(v === null){
+      if(!seeded){ seeded = true; db.ref('kakebo').set(seedState()); }
+      return;
+    }
+    state = v;
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
+    const ae = document.activeElement;
+    if(ae && (ae.tagName==='INPUT' || ae.tagName==='SELECT')) return; /* don't wipe a form mid-typing */
+    render();
+  }, err=>{
+    showErr('データベースに接続できへん：' + esc(err.message) + '<br>Realtime Databaseのルールが read/write とも true になってるか確認してや');
+  });
+  setInterval(renderCountdowns, 30000);
+})();
+
+</script>
+</body>
+</html>
