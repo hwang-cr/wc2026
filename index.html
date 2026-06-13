@@ -67,6 +67,8 @@
   .p-btn{font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:700;padding:6px 2px;width:88px;border:1.5px solid #CFC6AE;border-radius:4px;background:#FBF8EF;color:var(--ink-soft);cursor:pointer;transition:all .12s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .p-btn.on-A{background:var(--win);border-color:var(--win);color:#fff}
   .p-btn.on-B{background:#1F5276;border-color:#1F5276;color:#fff}
+  .p-btn.p3{width:62px;font-size:11px;padding:6px 1px}
+  .p-btn.on-D{background:#8A6D2F;border-color:#8A6D2F;color:#fff}
   .p-btn:disabled{opacity:.85;cursor:default}
   .p-mark{width:22px;text-align:center;font-size:14px;font-weight:900}
   .mk-win{color:var(--win)} .mk-lose{color:var(--lose)}
@@ -111,6 +113,39 @@
   .players-edit input{width:calc(50% - 4px);flex:none}
   .note{font-size:11px;color:var(--chalk-dim);margin-top:10px;line-height:1.7}
   .cond-preview{margin-top:10px;font-size:12px;font-weight:700;color:var(--amber);min-height:18px}
+  .score-in{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .score-in input{width:56px;padding:9px 0;text-align:center;border:1.5px solid #CFC6AE;border-radius:5px;background:#FBF8EF;color:var(--ink);font-family:inherit;font-size:16px;font-weight:900}
+  .score-in .sc-team{font-size:13px;font-weight:900}
+  .score-in .sc-dash{font-weight:900;color:var(--ink-soft)}
+  .sc-go{padding:10px 18px;border:1.5px solid var(--ink);border-radius:5px;background:#fff;color:var(--ink);font-weight:900;font-size:13px;cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+  .sc-patch{margin-top:8px}
+  .sc-patch input{width:44px;padding:6px 0;font-size:13px}
+  .sc-patch .sc-go{padding:7px 12px;font-size:11px}
+  .gs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:560px){.gs-grid{grid-template-columns:1fr}}
+  .gs-card{background:var(--felt-dark);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .gs-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.12em;color:var(--amber);padding:8px 12px 4px}
+  .gs-row{display:flex;align-items:center;gap:6px;padding:6px 12px;border-top:1px dashed var(--line);font-size:12px}
+  .gs-rank{font-family:'Bebas Neue',sans-serif;width:16px;color:var(--chalk-dim)}
+  .gs-row.q .gs-rank{color:var(--amber)}
+  .gs-team{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .gs-num{width:30px;text-align:right;color:var(--chalk-dim);font-variant-numeric:tabular-nums}
+  .gs-pts{width:30px;text-align:right;font-weight:900;color:var(--chalk);font-variant-numeric:tabular-nums}
+  .gs-head{display:flex;gap:6px;padding:0 12px 4px;font-size:9px;color:var(--chalk-dim);letter-spacing:.08em}
+  .gs-head .gs-team{font-weight:400}
+  .stat-card{background:var(--felt-dark);border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden}
+  .stat-card-t{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.1em;color:var(--amber);padding:9px 14px 5px}
+  .stat-row{display:flex;align-items:center;gap:8px;padding:7px 14px;border-top:1px dashed var(--line);font-size:13px}
+  .stat-rk{font-family:'Bebas Neue',sans-serif;width:16px;color:var(--chalk-dim)}
+  .stat-row:first-of-type .stat-rk{color:var(--amber)}
+  .stat-nm{flex:1;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .stat-sub{font-size:10px;color:var(--chalk-dim)}
+  .stat-big{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--chalk);min-width:46px;text-align:right}
+  .streak-fire{font-size:10px;font-weight:900;color:#FF8A3D;white-space:nowrap}
+  .cmt-show{font-size:12px;font-weight:700;color:var(--ink);background:#EFE8D4;border-radius:5px;padding:7px 10px;margin-top:8px;line-height:1.5}
+  .cmt-edit{font-size:10px;color:var(--ink-soft);background:none;border:1px solid #CFC6AE;border-radius:3px;padding:1px 7px;cursor:pointer;font-family:inherit;margin-left:4px}
+  .cmt-add{display:flex;gap:6px;margin-top:8px}
+  .cmt-in{flex:1;padding:8px 10px;border:1.5px solid #CFC6AE;border-radius:5px;background:#FBF8EF;color:var(--ink);font-family:inherit;font-size:12px;font-weight:700}
   .ov{position:fixed;inset:0;background:rgba(10,25,18,.6);display:flex;align-items:center;justify-content:center;z-index:90;padding:20px}
   .dlg{background:var(--paper);color:var(--ink);border-radius:8px;padding:20px 18px;max-width:320px;width:100%;box-shadow:0 6px 20px rgba(0,0,0,.4)}
   .dlg p{font-size:14px;font-weight:700;line-height:1.6;margin-bottom:16px}
@@ -149,35 +184,17 @@
     <div class="sec-head"><h2>順位表</h2></div>
     <div class="standings" id="standings"></div>
 
+    <div class="sec-head"><h2>グループ順位表（大会）</h2></div>
+    <div id="groupTables"></div>
+
+    <div class="sec-head"><h2>戦績スタッツ</h2></div>
+    <div id="statsPanel"></div>
+
     <div class="sec-head"><h2>受付中</h2></div>
     <div id="openMatches"></div>
 
     <div class="sec-head"><h2>結果済み</h2></div>
     <div id="settledMatches"></div>
-
-    <div class="sec-head"><h2>試合を追加</h2></div>
-    <div class="panel">
-      <div class="two-col">
-        <div><label>チームA（国旗OK）</label><input id="fTeamA" placeholder="🇳🇱 オランダ"></div>
-        <div><label>チームB</label><input id="fTeamB" placeholder="🇯🇵 日本"></div>
-      </div>
-      <label>キックオフ日時（日本時間で入力・締切は自動で2時間前）</label>
-      <input id="fKick" type="datetime-local">
-      <label>条件の対象チーム</label>
-      <select id="fCondTeam">
-        <option value="A">チームA</option>
-        <option value="B">チームB</option>
-      </select>
-      <label>ライン</label>
-      <select id="fMargin">
-        <option value="0">同点以上で勝ち</option>
-        <option value="1">1点差以上で勝ち</option>
-        <option value="2">2点差以上で勝ち</option>
-        <option value="3">3点差以上で勝ち</option>
-      </select>
-      <div class="cond-preview" id="condPreview"></div>
-      <button class="btn-main" id="addMatch">この条件で受付開始</button>
-    </div>
 
     <div class="sec-head"><h2>メンバー</h2></div>
     <div class="panel">
@@ -186,8 +203,10 @@
       <button class="btn-main" id="savePlayers">名前を保存</button>
       <p class="note">
         ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに¥1,000</b>払う（例：1人外して2人的中 → 外した人は¥2,000払い）。全員同じチーム or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
-        締切：キックオフ2時間前まで変更可能。それ以降はロック。<br>
-        ※リンクを知ってる人全員が同じ帳簿をリアルタイムで見て編集できる。ログイン不要。
+        締切：キックオフ15分前まで変更可能。それ以降はロック。<br>
+        賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。3択も精算は同じで、当たった人で実質山分け。<br>
+        PIN：初めて自分の行を触るとき4〜8桁のPINを設定する。以降その行はPINを知ってる本人しか触れん（一度通した端末は次から入力不要）。PIN忘れたら管理人（ふぁんさ）に言うてリセットしてもらえ。<br>
+        ※リンクを知ってる人全員が同じ帳簿をリアルタイムで見れる。ログイン不要。
       </p>
     </div>
   </div>
@@ -221,6 +240,7 @@ const firebaseConfig = {
   messagingSenderId: "976442008640",
   appId: "1:976442008640:web:c4aea64cf228dd05b86ba5"
 };
+
 const STAKE = 1000;
 let state = null;
 let db = null;
@@ -348,14 +368,69 @@ function ask(msg){
 
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+/* ── PIN（本人確認）まわり ── */
+async function sha(t){
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('kakebo:'+t));
+  return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function getIds(){ try{ return JSON.parse(localStorage.getItem('kakebo-ids')||'{}'); }catch(e){ return {}; } }
+function setId(p,h){ const m=getIds(); m[p]=h; localStorage.setItem('kakebo-ids', JSON.stringify(m)); }
+
+function askPin(title, sub){
+  return new Promise(res=>{
+    const ov = document.createElement('div');
+    ov.className = 'ov';
+    ov.innerHTML = `<div class="dlg"><p>${esc(title)}</p>
+      <p style="font-size:12px;color:var(--ink-soft);font-weight:700;margin-top:-8px">${esc(sub||'')}</p>
+      <input class="pin-in" type="password" inputmode="numeric" maxlength="8" placeholder="数字4〜8桁" style="width:100%;padding:12px;text-align:center;font-size:20px;font-weight:900;letter-spacing:.3em;border:1.5px solid #CFC6AE;border-radius:5px;background:#FBF8EF;color:var(--ink);margin-bottom:14px;font-family:inherit">
+      <div class="dlg-btns">
+        <button class="dlg-no">やめる</button>
+        <button class="dlg-yes">OK</button>
+      </div></div>`;
+    document.body.appendChild(ov);
+    const inp = ov.querySelector('.pin-in');
+    setTimeout(()=>inp.focus(), 50);
+    const done = v => { ov.remove(); res(v); };
+    ov.querySelector('.dlg-yes').onclick = ()=> done(inp.value.trim());
+    ov.querySelector('.dlg-no').onclick = ()=> done(null);
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter') done(inp.value.trim()); });
+    ov.onclick = (e)=>{ if(e.target===ov) done(null); };
+  });
+}
+
+/* タップした行の本人確認。PIN未設定なら新規作成、設定済みなら照合。一度通った端末は記憶 */
+async function verifyPlayer(p){
+  const pins = state.pins || {};
+  const stored = pins[p];
+  if(!stored){
+    const pin = await askPin(`${p} のPINを新規設定`, 'これ以降、この行を触るにはこのPINが必要になる。自分の番号は覚えときや');
+    if(pin===null) return false;
+    if(!/^\d{4,8}$/.test(pin)){ toast('数字4〜8桁でな'); return false; }
+    const h = await sha(pin);
+    db.ref(`kakebo/pins/${p}`).set(h);
+    setId(p, h);
+    toast(`${p} のPINを設定した`);
+    return true;
+  }
+  if(getIds()[p] === stored) return true;
+  const pin = await askPin(`${p} のPINを入力`, '本人確認や（この端末は次から省略される）');
+  if(pin===null) return false;
+  const h = await sha(pin);
+  if(h !== stored){ toast('PINがちゃうで🚫'); return false; }
+  setId(p, h);
+  return true;
+}
+
 function condText(m){
+  if(m.mode==='3way') return null; /* 3way uses its own label, not condText */
   if(m.condTeam==null || m.margin==null) return null;
   const t = (m.condTeam==='A' ? m.teamA : m.teamB).split(' ')[0];
   if(Number(m.margin)===0) return `同点以上で ${t} 勝ち`;
   return `${m.margin}点差以上で ${t} 勝ち`;
 }
-function hasCond(m){ return m.condTeam!=null && m.margin!=null; }
-function deadline(m){ return m.kickoff - 2*3600*1000; }
+function is3way(m){ return m.mode==='3way'; }
+function hasCond(m){ return is3way(m) || (m.condTeam!=null && m.margin!=null); }
+function deadline(m){ return m.kickoff - 15*60*1000; }
 function isLocked(m){ return Date.now() > deadline(m); }
 function kicked(m){ return Date.now() > m.kickoff; }
 
@@ -365,16 +440,38 @@ function matchList(){
 }
 
 function settle(){
-  const totals={}, records={};
-  (state.players||[]).forEach(p=>{ totals[p]=0; records[p]={w:0,l:0}; });
+  const totals={}, records={}, stats={};
+  (state.players||[]).forEach(p=>{
+    totals[p]=0; records[p]={w:0,l:0};
+    stats[p]={hit:0, picked:0, curStreak:0, bestStreak:0, lone:0};
+  });
   let moved = 0;
   const info = {};
-  matchList().forEach(m=>{
-    if(!m.result) return;
+  const settledMatches = matchList().filter(m=>m.result).sort((a,b)=>a.kickoff-b.kickoff);
+  settledMatches.forEach(m=>{
     const pickers = (state.players||[]).filter(p=>m.picks[p]);
+    /* 逆張り王: その選択肢を1人だけで張った人（当落無関係） */
+    const sideCount = {};
+    pickers.forEach(p=>{ sideCount[m.picks[p]] = (sideCount[m.picks[p]]||0)+1; });
+    pickers.forEach(p=>{
+      if(sideCount[m.picks[p]]===1 && pickers.length>=2) stats[p].lone++;
+    });
     const winners = pickers.filter(p=>m.picks[p]===m.result);
     const losers  = pickers.filter(p=>m.picks[p]!==m.result);
-    if(winners.length===0 || losers.length===0){ info[m.id]={void:true,transfers:[]}; return; }
+    const isVoid = (winners.length===0 || losers.length===0);
+    if(!isVoid){
+      pickers.forEach(p=>{
+        stats[p].picked++;
+        if(m.picks[p]===m.result){
+          stats[p].hit++;
+          stats[p].curStreak++;
+          if(stats[p].curStreak>stats[p].bestStreak) stats[p].bestStreak=stats[p].curStreak;
+        }else{
+          stats[p].curStreak=0;
+        }
+      });
+    }
+    if(isVoid){ info[m.id]={void:true,transfers:[]}; return; }
     const transfers = [];
     losers.forEach(l=>{
       totals[l] -= winners.length*STAKE;
@@ -385,7 +482,7 @@ function settle(){
     moved += winners.length*losers.length*STAKE;
     info[m.id] = { void:false, transfers };
   });
-  return { totals, records, moved, info };
+  return { totals, records, moved, info, stats };
 }
 
 function fmtDate(ts){
@@ -401,7 +498,7 @@ function fmtRemain(ms){
 
 function render(){
   if(!state) return;
-  const { totals, records, moved, info } = settle();
+  const { totals, records, moved, info, stats } = settle();
   const all = matchList();
 
   document.getElementById('statMatches').textContent = all.filter(m=>m.result).length;
@@ -419,6 +516,77 @@ function render(){
       <div class="st-yen ${cls}">${v>0?'+':''}¥${v.toLocaleString()}</div>
     </div>`;
   }).join('');
+
+  /* ── 戦績スタッツ：的中率・連勝・逆張り王 ── */
+  const players = state.players||[];
+  const hitRanked = [...players].filter(p=>stats[p].picked>0)
+    .sort((a,b)=> (stats[b].hit/stats[b].picked) - (stats[a].hit/stats[a].picked) || stats[b].picked-stats[a].picked);
+  const bestStreakNow = Math.max(0, ...players.map(p=>stats[p].bestStreak));
+  const loneRanked = [...players].filter(p=>stats[p].lone>0).sort((a,b)=>stats[b].lone-stats[a].lone);
+
+  let statsHtml = '';
+  /* 的中率ランキング */
+  if(hitRanked.length){
+    statsHtml += `<div class="stat-card"><div class="stat-card-t">🎯 的中率ランキング</div>` +
+      hitRanked.map((p,i)=>{
+        const s=stats[p]; const rate=Math.round(s.hit/s.picked*100);
+        const cur = s.curStreak>=2 ? `<span class="streak-fire">🔥${s.curStreak}連勝中</span>` : '';
+        return `<div class="stat-row"><span class="stat-rk">${i+1}</span>
+          <span class="stat-nm">${esc(p)}</span>
+          <span class="stat-sub">${s.hit}/${s.picked}的中</span>
+          <span class="stat-big">${rate}%</span>${cur}</div>`;
+      }).join('') + `</div>`;
+  }
+  /* 逆張り王ランキング */
+  if(loneRanked.length){
+    statsHtml += `<div class="stat-card"><div class="stat-card-t">😎 逆張り王ランキング</div>` +
+      loneRanked.map((p,i)=>{
+        const crown = i===0 ? '👑' : '';
+        return `<div class="stat-row"><span class="stat-rk">${i+1}</span>
+          <span class="stat-nm">${esc(p)} ${crown}</span>
+          <span class="stat-sub">1人で張った回数</span>
+          <span class="stat-big">${stats[p].lone}回</span></div>`;
+      }).join('') + `</div>`;
+  }
+  /* 最高連勝記録 */
+  if(bestStreakNow>=2){
+    const holders = players.filter(p=>stats[p].bestStreak===bestStreakNow);
+    statsHtml += `<div class="stat-card"><div class="stat-card-t">⚡ 最高連勝記録</div>
+      <div class="stat-row"><span class="stat-nm">${holders.map(esc).join('、')}</span>
+      <span class="stat-big">${bestStreakNow}連勝</span></div></div>`;
+  }
+  document.getElementById('statsPanel').innerHTML = statsHtml ||
+    `<div class="empty">結果が入ったら戦績が出るで</div>`;
+
+  const groups = {};
+  all.forEach(m=>{
+    if(!m.grp || m.grp.length!==1) return;
+    const g = groups[m.grp] = groups[m.grp] || {};
+    g[m.teamA] = g[m.teamA] || {pts:0,gf:0,ga:0,pl:0};
+    g[m.teamB] = g[m.teamB] || {pts:0,gf:0,ga:0,pl:0};
+    if(m.scoreA==null || m.scoreB==null) return;
+    const A = g[m.teamA], B = g[m.teamB];
+    A.gf+=m.scoreA; A.ga+=m.scoreB; B.gf+=m.scoreB; B.ga+=m.scoreA;
+    A.pl++; B.pl++;
+    if(m.scoreA>m.scoreB) A.pts+=3; else if(m.scoreA<m.scoreB) B.pts+=3; else { A.pts++; B.pts++; }
+  });
+  document.getElementById('groupTables').innerHTML =
+    `<div class="gs-grid">` + Object.keys(groups).sort().map(gk=>{
+      const teams = Object.keys(groups[gk]).map(t=>({t, ...groups[gk][t], gd:groups[gk][t].gf-groups[gk][t].ga}));
+      teams.sort((x,y)=> y.pts-x.pts || y.gd-x.gd || y.gf-x.gf || x.t.localeCompare(y.t));
+      const rows = teams.map((x,i)=>`<div class="gs-row ${i<2?'q':''}">
+        <span class="gs-rank">${i+1}</span>
+        <span class="gs-team">${esc(x.t)}</span>
+        <span class="gs-num">${x.pl}</span>
+        <span class="gs-num">${x.gd>0?'+':''}${x.gd}</span>
+        <span class="gs-pts">${x.pts}</span>
+      </div>`).join('');
+      return `<div class="gs-card">
+        <div class="gs-title">GROUP ${esc(gk)}</div>
+        <div class="gs-head"><span class="gs-rank"></span><span class="gs-team"></span><span class="gs-num">試</span><span class="gs-num">差</span><span class="gs-pts">点</span></div>
+        ${rows}
+      </div>`;
+    }).join('') + `</div>`;
 
   const open = all.filter(m=>!m.result).sort((a,b)=>a.kickoff-b.kickoff);
   const done = all.filter(m=>m.result).sort((a,b)=>b.kickoff-a.kickoff);
@@ -448,6 +616,7 @@ function ticket(m, info){
 
   let rows = '';
   if(condSet){
+    const threeWay = is3way(m);
     rows = (state.players||[]).map(p=>{
       const pick = m.picks[p] || null;
       let mark = `<span class="p-mark"></span>`;
@@ -459,6 +628,15 @@ function ticket(m, info){
         mark = `<span class="p-mark">−</span>`;
       }
       const dis = (settled||locked) ? 'disabled' : '';
+      if(threeWay){
+        return `<div class="pick-row">
+          <div class="p-name">${esc(p)}</div>
+          <button class="p-btn p3 ${pick==='A'?'on-A':''}" data-side="A" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortA)}</button>
+          <button class="p-btn p3 ${pick==='D'?'on-D':''}" data-side="D" data-m="${m.id}" data-p="${esc(p)}" ${dis}>分け</button>
+          <button class="p-btn p3 ${pick==='B'?'on-B':''}" data-side="B" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortB)}</button>
+          ${mark}
+        </div>`;
+      }
       return `<div class="pick-row">
         <div class="p-name">${esc(p)}</div>
         <button class="p-btn ${pick==='A'?'on-A':''}" data-side="A" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortA)}</button>
@@ -478,14 +656,25 @@ function ticket(m, info){
 
   let condBlock;
   if(condSet){
-    const oppSide = m.condTeam==='A' ? shortB : shortA;
     const chg = (!settled && !locked)
       ? ` <button class="cond-chg" data-cclr="${m.id}">変更</button>` : '';
-    condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ${esc(condText(m))}${chg}<br>
-      <span class="vs">${esc(m.condTeam==='A'?shortA:shortB)} に賭ける＝条件どおりなら勝ち／${esc(oppSide)} に賭ける＝条件が崩れたら勝ち</span></div>`;
+    if(is3way(m)){
+      condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ハンデなし3択${chg}<br>
+        <span class="vs">${esc(shortA)}勝ち / 引き分け / ${esc(shortB)}勝ち から選ぶ。当たった人で山分け</span></div>`;
+    } else {
+      const oppSide = m.condTeam==='A' ? shortB : shortA;
+      condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ${esc(condText(m))}${chg}<br>
+        <span class="vs">${esc(m.condTeam==='A'?shortA:shortB)} に賭ける＝条件どおりなら勝ち／${esc(oppSide)} に賭ける＝条件が崩れたら勝ち</span></div>`;
+    }
   } else if(!locked) {
-    condBlock = `<div class="t-cond"><span class="q">条件を決める</span>
+    condBlock = `<div class="t-cond"><span class="q">賭けの種類を決める</span>
       <div class="cond-set">
+        <select data-cmode="${m.id}">
+          <option value="hc">ハンデ付き2択</option>
+          <option value="3way">ハンデなし3択（勝ち/分け/負け）</option>
+        </select>
+      </div>
+      <div class="cond-set" data-hcrow="${m.id}">
         <select data-cteam="${m.id}">
           <option value="A">${esc(shortA)}</option>
           <option value="B">${esc(shortB)}</option>
@@ -496,9 +685,9 @@ function ticket(m, info){
           <option value="2">2点差以上で勝ち</option>
           <option value="3">3点差以上で勝ち</option>
         </select>
-        <button class="cond-go" data-cset="${m.id}">確定</button>
       </div>
-      <span class="vs">条件を確定したら賭けられるようになる</span></div>`;
+      <div class="cond-set"><button class="cond-go" data-cset="${m.id}">確定</button></div>
+      <span class="vs">確定したら賭けられるようになる</span></div>`;
   } else {
     condBlock = `<div class="t-cond"><span class="q">条件</span>未設定のまま締切。この試合はノーゲーム扱いや</div>`;
   }
@@ -506,20 +695,35 @@ function ticket(m, info){
   let foot;
   if(settled){
     const i = info[m.id]||{void:true,transfers:[]};
+    const hasScore = (m.scoreA!=null && m.scoreB!=null);
+    const scoreTxt = hasScore ? `${m.scoreA}-${m.scoreB}　` : '';
+    let resLabel;
+    if(is3way(m)) resLabel = m.result==='A' ? `${shortA}勝ち` : m.result==='B' ? `${shortB}勝ち` : '引き分け';
+    else resLabel = `${m.result==='A'?shortA:shortB} 側の勝ち`;
     const tag = i.void
-      ? `<span class="settled-tag void">ノーゲーム（対抗なし）</span>`
-      : `<span class="settled-tag">結果：${esc(m.result==='A'?shortA:shortB)} 側の勝ち</span>`;
+      ? `<span class="settled-tag void">${scoreTxt}ノーゲーム（対抗なし）</span>`
+      : `<span class="settled-tag">${scoreTxt}${esc(resLabel)}</span>`;
     const tr = i.transfers.length
       ? `<div class="transfers">${i.transfers.join('<br>')}</div>` : '';
+    const patch = !hasScore
+      ? `<div class="score-in sc-patch"><span class="sc-team">${esc(shortA)}</span><input type="number" min="0" inputmode="numeric" data-pa="${m.id}"><span class="sc-dash">−</span><input type="number" min="0" inputmode="numeric" data-pb="${m.id}"><span class="sc-team">${esc(shortB)}</span><button class="sc-go" data-pgo="${m.id}">スコア追記（順位表用）</button></div>`
+      : '';
+    const cmt = m.comment
+      ? `<div class="cmt-show">💬 ${esc(m.comment)} <button class="cmt-edit" data-cmt="${m.id}">編集</button></div>`
+      : `<div class="cmt-add"><input class="cmt-in" data-cmtin="${m.id}" placeholder="ひとことメモ（PK戦の末、神試合…）" value=""><button class="sc-go" data-cmtgo="${m.id}">残す</button></div>`;
     foot = `<div class="settled-band">
       <div class="settled-top">${tag}</div>
-      ${tr}
+      ${tr}${patch}${cmt}
     </div>`;
   } else if(kicked(m) && condSet){
-    foot = `<div class="res-label">結果入力（どっち側が勝った？）</div>
-      <div class="res-btns">
-        <button class="res-btn" data-res="A" data-m="${m.id}">${esc(shortA)} 側<br><small>条件${m.condTeam==='A'?'成立':'不成立'}</small></button>
-        <button class="res-btn" data-res="B" data-m="${m.id}">${esc(shortB)} 側<br><small>条件${m.condTeam==='B'?'成立':'不成立'}</small></button>
+    foot = `<div class="res-label">結果入力：スコアを入れたら勝敗は自動判定や</div>
+      <div class="score-in">
+        <span class="sc-team">${esc(shortA)}</span>
+        <input type="number" min="0" inputmode="numeric" data-sa="${m.id}">
+        <span class="sc-dash">−</span>
+        <input type="number" min="0" inputmode="numeric" data-sb="${m.id}">
+        <span class="sc-team">${esc(shortB)}</span>
+        <button class="sc-go" data-sgo="${m.id}">確定</button>
       </div>`;
   } else if(condSet){
     foot = `<div class="waiting">キックオフ後にここで結果入力できる</div>`;
@@ -548,7 +752,7 @@ function renderCountdowns(){
   document.querySelectorAll('[data-dl]').forEach(el=>{
     const m = (state.matches||{})[el.dataset.dl];
     if(!m) return;
-    const remain = fmtRemain((m.kickoff - 2*3600*1000)-Date.now());
+    const remain = fmtRemain((m.kickoff - 15*60*1000)-Date.now());
     if(!remain){ render(); return; }
     el.innerHTML = `受付中<br>締切まで ${remain}`;
   });
@@ -561,69 +765,106 @@ function renderPlayersEdit(){
 
 function bind(){
   document.querySelectorAll('.p-btn').forEach(b=>{
-    b.onclick = ()=>{
+    b.onclick = async ()=>{
       const m = (state.matches||{})[b.dataset.m];
       if(!m || isLocked(m) || m.result || !hasCond(m)){ if(m&&isLocked(m)) toast('締切済み。もう変えられへん'); return; }
       const p = b.dataset.p, side = b.dataset.side;
+      if(!await verifyPlayer(p)) return;
+      const mm = (state.matches||{})[b.dataset.m];
+      if(!mm || isLocked(mm) || mm.result){ toast('締切済み。もう変えられへん'); return; }
       const ref = db.ref(`kakebo/matches/${b.dataset.m}/picks/${p}`);
-      if((m.picks||{})[p]===side) ref.remove(); else ref.set(side);
+      if((mm.picks||{})[p]===side) ref.remove(); else ref.set(side);
     };
   });
-  document.querySelectorAll('.res-btn').forEach(b=>{
+  /* which betting side wins given a score */
+  function judge(m, a, b){
+    if(is3way(m)){
+      if(a>b) return 'A';
+      if(a<b) return 'B';
+      return 'D';
+    }
+    const condIsA = m.condTeam==='A';
+    const tScore = condIsA ? a : b;
+    const oScore = condIsA ? b : a;
+    const mg = Number(m.margin);
+    const condHolds = (mg===0) ? (tScore >= oScore) : (tScore - oScore >= mg);
+    return condHolds ? m.condTeam : (condIsA ? 'B' : 'A');
+  }
+  document.querySelectorAll('[data-sgo]').forEach(b=>{
     b.onclick = async ()=>{
-      const m = (state.matches||{})[b.dataset.m];
+      const mid = b.dataset.sgo;
+      const m = (state.matches||{})[mid];
       if(!m) return;
-      const side = b.dataset.res==='A' ? m.teamA : m.teamB;
-      if(!await ask(`結果：${side} 側の勝ちで確定する？（取消はできへん）`)) return;
-      db.ref(`kakebo/matches/${b.dataset.m}/result`).set(b.dataset.res);
+      const a = parseInt(document.querySelector(`[data-sa="${mid}"]`).value, 10);
+      const sb = parseInt(document.querySelector(`[data-sb="${mid}"]`).value, 10);
+      if(isNaN(a) || isNaN(sb) || a<0 || sb<0){ toast('スコアを両方入れてや'); return; }
+      const w = judge(m, a, sb);
+      const shortA = m.teamA.split(' ')[0], shortB = m.teamB.split(' ')[0];
+      let wName;
+      if(is3way(m)) wName = w==='A'?`${shortA}勝ち`:w==='B'?`${shortB}勝ち`:'引き分け';
+      else wName = (w==='A'?shortA:shortB)+' 側の勝ち';
+      if(!await ask(`スコア ${shortA} ${a}-${sb} ${shortB} → 賭けは「${wName}」で記帳する？（取消はできへん）`)) return;
+      db.ref(`kakebo/matches/${mid}`).update({ result:w, scoreA:a, scoreB:sb });
       toast('記帳した');
+    };
+  });
+  document.querySelectorAll('[data-pgo]').forEach(b=>{
+    b.onclick = ()=>{
+      const mid = b.dataset.pgo;
+      const a = parseInt(document.querySelector(`[data-pa="${mid}"]`).value, 10);
+      const sb = parseInt(document.querySelector(`[data-pb="${mid}"]`).value, 10);
+      if(isNaN(a) || isNaN(sb) || a<0 || sb<0){ toast('スコアを両方入れてや'); return; }
+      db.ref(`kakebo/matches/${mid}`).update({ scoreA:a, scoreB:sb });
+      toast('スコア追記した');
+    };
+  });
+  document.querySelectorAll('[data-cmtgo]').forEach(b=>{
+    b.onclick = ()=>{
+      const mid = b.dataset.cmtgo;
+      const v = (document.querySelector(`[data-cmtin="${mid}"]`).value||'').trim().slice(0,80);
+      if(!v){ toast('ひとこと入れてや'); return; }
+      db.ref(`kakebo/matches/${mid}/comment`).set(v);
+      toast('メモ残した');
+    };
+  });
+  document.querySelectorAll('[data-cmt]').forEach(b=>{
+    b.onclick = ()=>{
+      const mid = b.dataset.cmt;
+      db.ref(`kakebo/matches/${mid}/comment`).remove();
+      toast('編集できるで');
+    };
+  });
+  document.querySelectorAll('[data-cmode]').forEach(sel=>{
+    sel.onchange = ()=>{
+      const mid = sel.dataset.cmode;
+      const row = document.querySelector(`[data-hcrow="${mid}"]`);
+      if(row) row.style.display = sel.value==='3way' ? 'none' : 'flex';
     };
   });
   document.querySelectorAll('[data-cset]').forEach(b=>{
     b.onclick = ()=>{
       const mid = b.dataset.cset;
-      const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
-      const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
-      db.ref(`kakebo/matches/${mid}`).update({ condTeam:ct, margin:mg });
-      toast('条件セット、受付開始や');
+      const mode = document.querySelector(`[data-cmode="${mid}"]`).value;
+      if(mode==='3way'){
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'3way', condTeam:null, margin:null });
+        toast('3択でセット、受付開始や');
+      }else{
+        const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
+        const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'hc', condTeam:ct, margin:mg });
+        toast('条件セット、受付開始や');
+      }
     };
   });
   document.querySelectorAll('[data-cclr]').forEach(b=>{
     b.onclick = async ()=>{
       if(!await ask('条件を変更すると全員の選択もリセットされる。ええか？')) return;
-      db.ref(`kakebo/matches/${b.dataset.cclr}`).update({ condTeam:null, margin:null, picks:null });
+      db.ref(`kakebo/matches/${b.dataset.cclr}`).update({ mode:null, condTeam:null, margin:null, picks:null });
     };
   });
 }
 
-function updatePreview(){
-  const a = document.getElementById('fTeamA').value.trim() || 'チームA';
-  const b = document.getElementById('fTeamB').value.trim() || 'チームB';
-  const ct = document.getElementById('fCondTeam').value;
-  const mg = Number(document.getElementById('fMargin').value);
-  const t = (ct==='A'?a:b).split(' ')[0];
-  const fa = a.split(' ')[0], fb = b.split(' ')[0];
-  const txt = mg===0 ? `同点以上で ${t} 勝ち` : `${mg}点差以上で ${t} 勝ち`;
-  document.getElementById('condPreview').textContent = `→ ${fa}vs${fb} → ${txt}`;
-}
-['fTeamA','fTeamB','fCondTeam','fMargin'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', updatePreview);
-  document.getElementById(id).addEventListener('change', updatePreview);
-});
-
-document.getElementById('addMatch').onclick = ()=>{
-  const a = document.getElementById('fTeamA').value.trim();
-  const b = document.getElementById('fTeamB').value.trim();
-  const k = document.getElementById('fKick').value;
-  if(!a || !b){ toast('チーム名を入れてや'); return; }
-  if(!k){ toast('キックオフ日時が要る（締切計算に使う）'); return; }
-  const kick = new Date(k + ':00+09:00').getTime();
-  db.ref('kakebo/matches/u'+Date.now()).set({ teamA:a, teamB:b, grp:'追加', kickoff:kick, picks:{} });
-  document.getElementById('fTeamA').value='';
-  document.getElementById('fTeamB').value='';
-  document.getElementById('fKick').value='';
-  toast('受付開始や');
-};
+function updatePreview(){ /* 試合追加フォームは廃止。全試合プリセット済み */ }
 
 document.getElementById('addPlayer').onclick = ()=>{
   const wrapEl = document.getElementById('playersEdit');
@@ -646,6 +887,9 @@ document.getElementById('savePlayers').onclick = async ()=>{
     (state.players||[]).forEach((old,i)=>{ if(newNames[i] && (m.picks||{})[old]) np[newNames[i]] = m.picks[old]; });
     updates[`kakebo/matches/${id}/picks`] = np;
   });
+  const newPins = {};
+  (state.players||[]).forEach((old,i)=>{ if(newNames[i] && (state.pins||{})[old]) newPins[newNames[i]] = state.pins[old]; });
+  updates['kakebo/pins'] = newPins;
   db.ref().update(updates);
   toast('メンバー更新');
 };
