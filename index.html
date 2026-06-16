@@ -286,7 +286,7 @@
           締切：キックオフ15分前まで変更可能。それ以降はロック。<br>
           賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。3択も精算は同じで、当たった人で実質山分け。<br>
           PIN：初めて自分の行を触るとき4〜8桁のPINを設定する。以降その行はPINを知ってる本人しか触れん（一度通した端末は次から入力不要）。PIN忘れたら管理人（ふぁんさ）に言うてリセットしてもらえ。<br>
-          ⚖️裁判所：問題発言したやつを起訴して、みんなで有罪/無罪を投票（3時間・PIN必須・当事者は投票不可）。3人以上投票で成立、過半数で判決、同点はノーゲーム。投票中は内訳非公開、締切後に票数だけ開票（誰が入れたかは最後まで秘密）。有罪→被告それぞれが原告それぞれに¥1,000ずつ／無罪→原告それぞれが被告それぞれに¥1,000ずつ（冤罪の罰）。有罪は1回で前科つき。<br>
+          ⚖️裁判所：問題発言したやつを起訴（起訴人はPIN確認＆記録される）。①予審1時間「この裁判いるか？」を受理/却下で投票→受理多数で本審へ、却下多数・同点・3人未満は廃案。②本審3時間で有罪/無罪を投票→3人以上・過半数で判決、同点/3人未満はノーゲーム。当事者は投票不可、内訳は締切まで非公開（誰が入れたかは永久に秘密、票数だけ開票）。有罪→被告それぞれが原告それぞれに¥1,000ずつ／無罪→原告それぞれが被告それぞれに¥1,000ずつ（冤罪の罰）。有罪は1回で前科。却下2回でその起訴人は全員に¥1,000ずつ罰金＋起訴BAN（以後起訴でけへん）。廃案も晒される。<br>
           ※リンクを知ってる人全員が同じ帳簿をリアルタイムで見れる。ログイン不要。
         </p>
       </div>
@@ -540,7 +540,7 @@ function renderNewTrialForm(){
     <div class="nt-field"><label>理由・問題発言の内容</label><textarea id="ntReason" rows="3" placeholder="何をやらかしたか書いたれ" maxlength="200"></textarea></div>
     <div class="nt-field"><label>原告（訴える人・複数可）— タップで選択</label><div class="nt-chips" id="ntPlaintiffs">${chips}</div></div>
     <div class="nt-field"><label>被告（訴えられる人・複数可）— タップで選択</label><div class="nt-chips" id="ntDefendants">${chips}</div></div>
-    <button class="btn-main" id="ntSubmit">この内容で起訴する（投票3時間）</button>
+    <button class="btn-main" id="ntSubmit">この内容で起訴する（予審1時間→本審3時間）</button>
   `;
   const selP = new Set(), selD = new Set();
   f.querySelectorAll('#ntPlaintiffs .nt-chip').forEach(c=>{
@@ -558,17 +558,24 @@ function renderNewTrialForm(){
     if(!selD.size){ toast('被告を選んでや'); return; }
     const overlap=[...selP].some(p=>selD.has(p));
     if(overlap){ toast('原告と被告に同じ人は入れられへん'); return; }
-    if(!await ask(`「${title}」で起訴する？投票は3時間や（取消できへん）`)) return;
+    /* 起訴人をPIN確認して記録 */
+    const creator = await whoAmI();
+    if(!creator){ return; }
+    if(isBanned(creator)){ toast('却下2回で起訴BANや。もう裁判は起こせん🚫'); return; }
+    if(!await ask(`起訴人 ${creator} として「${title}」で起訴する？\n予審1時間→受理されたら本審3時間。取消できへん`)) return;
     const id='t'+Date.now();
+    const now = Date.now();
     db.ref(`kakebo/trials/${id}`).set({
-      title, reason,
+      title, reason, creator,
       plaintiffs:[...selP], defendants:[...selD],
-      created: Date.now(), deadline: Date.now()+3*3600*1000,
-      votes:{}
+      created: now,
+      preDeadline: now + 1*3600*1000,   /* 予審1時間 */
+      deadline: now + 4*3600*1000,      /* 本審は予審後3時間 = 起訴から4時間後に開票 */
+      preVotes:{}, votes:{}
     });
     document.getElementById('newTrialForm').style.display='none';
     document.getElementById('newTrialBtn').textContent='＋ 新しい裁判を起こす';
-    toast('起訴した。3時間後に開票や⚖️');
+    toast('起訴した。まず予審1時間や⚖️');
   };
 }
 
@@ -650,10 +657,29 @@ function settle(){
 /* ── 裁判所ロジック ── */
 function trialList(){
   const ts = (state.trials)||{};
-  return Object.keys(ts).map(id=>{ const t=ts[id]; t.id=id; t.votes=t.votes||{}; t.plaintiffs=t.plaintiffs||[]; t.defendants=t.defendants||[]; return t; });
+  return Object.keys(ts).map(id=>{
+    const t=ts[id]; t.id=id;
+    t.preVotes=t.preVotes||{}; t.votes=t.votes||{};
+    t.plaintiffs=t.plaintiffs||[]; t.defendants=t.defendants||[];
+    return t;
+  });
 }
-function trialVerdict(t){
-  /* returns {state:'voting'|'guilty'|'innocent'|'void'|'failed', g, n, total} */
+/* 予審：この裁判いるか（受理 a / 却下 r）。1時間。3人以上・受理多数で本審へ。
+   却下多数 or 同点 or 3人未満 → 廃案 */
+function preVerdict(t){
+  const vals = Object.values(t.preVotes||{});
+  const a = vals.filter(v=>v==='a').length;
+  const r = vals.filter(v=>v==='r').length;
+  const total = a+r;
+  const closed = Date.now() > t.preDeadline;
+  if(!closed) return {state:'voting', a, r, total};
+  if(total < 3) return {state:'dismissed', a, r, total, reason:'投票3人未満'};
+  if(a===r)    return {state:'dismissed', a, r, total, reason:'同点'};
+  if(a>r)      return {state:'accepted', a, r, total};
+  return {state:'dismissed', a, r, total, reason:'却下多数'};
+}
+/* 本審：有罪 g / 無罪 n。3時間。3人以上・過半数。同点/3人未満ノーゲーム */
+function mainVerdict(t){
   const vals = Object.values(t.votes||{});
   const g = vals.filter(v=>v==='g').length;
   const n = vals.filter(v=>v==='n').length;
@@ -664,53 +690,87 @@ function trialVerdict(t){
   if(g===n) return {state:'void', g, n, total};
   return {state: g>n?'guilty':'innocent', g, n, total};
 }
-/* count guilty verdicts per person (as defendant) across all closed trials */
-function guiltyCounts(){
+/* 全体フェーズ：pre_voting | dismissed | main_voting | guilty | innocent | void | failed */
+function trialPhase(t){
+  const pre = preVerdict(t);
+  if(pre.state==='voting')    return {phase:'pre_voting', pre};
+  if(pre.state==='dismissed') return {phase:'dismissed', pre};
+  const main = mainVerdict(t);
+  return {phase:'main_'+(main.state==='voting'?'voting':main.state), pre, main};
+}
+/* 却下回数（起訴人ごと） */
+function dismissCounts(){
   const c = {};
   trialList().forEach(t=>{
-    const v = trialVerdict(t);
-    if(v.state==='guilty') t.defendants.forEach(d=>{ c[d]=(c[d]||0)+1; });
+    if(!t.creator) return;
+    if(preVerdict(t).state==='dismissed') c[t.creator]=(c[t.creator]||0)+1;
   });
   return c;
 }
+function isBanned(p){ return (dismissCounts()[p]||0) >= 2; }
+/* 前科（有罪）回数（被告ごと） */
+function guiltyCounts(){
+  const c = {};
+  trialList().forEach(t=>{
+    const ph = trialPhase(t);
+    if(ph.phase==='main_guilty') t.defendants.forEach(d=>{ c[d]=(c[d]||0)+1; });
+  });
+  return c;
+}
+
 
 function renderTrials(){
   const box = document.getElementById('trialList');
   if(!box) return;
   const list = trialList().sort((a,b)=>b.created-a.created);
-  const myId = (typeof currentPlayer==='function') ? null : null;
   if(!list.length){ box.innerHTML = `<div class="empty">まだ裁判は無い。問題発言を見つけたら起訴したれ</div>`; return; }
   box.innerHTML = list.map(t=>{
-    const v = trialVerdict(t);
+    const ph = trialPhase(t);
     const plaintiffs = t.plaintiffs.map(esc).join('・');
     const defendants = t.defendants.map(esc).join('・');
-    let statusLine, body;
-    if(v.state==='voting'){
+    const creator = t.creator ? `<span style="color:var(--ink-soft)">　起訴人：<b>${esc(t.creator)}</b></span>` : '';
+    let cls='', statusLine='', body='';
+
+    if(ph.phase==='pre_voting'){
+      const remain = fmtRemain(t.preDeadline - Date.now());
+      statusLine = `<div class="trial-status">⚖️ 予審：この裁判いるか？・締切まで ${remain}　（${ph.pre.total}人 投票済み）</div>`;
+      body = `<div class="vote-btns">
+        <button class="vote-btn innocent" data-pv="a" data-t="${t.id}">受理（やろう）</button>
+        <button class="vote-btn" style="border-color:var(--ink-soft);color:var(--ink-soft)" data-pv="r" data-t="${t.id}">却下（くだらん）</button>
+      </div>
+      <div style="font-size:10px;color:var(--ink-soft);margin-top:6px">※予審は1時間。受理多数で本審（有罪/無罪）に進む。内訳は締切まで非公開。当事者は投票でけへん</div>`;
+    } else if(ph.phase==='dismissed'){
+      cls='';
+      const dc = dismissCounts()[t.creator]||0;
+      statusLine = `<div class="trial-status" style="color:var(--ink-soft)">予審で廃案（${esc(ph.pre.reason)}）</div>`;
+      body = `<div class="verdict-box void">❌ 却下（受理${ph.pre.a}・却下${ph.pre.r}）<br>起訴人 ${esc(t.creator||'?')}：却下${dc}回目${dc>=2?'　🚫BAN':''}</div>`;
+    } else if(ph.phase==='main_voting'){
       const remain = fmtRemain(t.deadline - Date.now());
-      statusLine = `<div class="trial-status">🗳 投票受付中・締切まで ${remain}　（${v.total}人 投票済み）</div>`;
+      statusLine = `<div class="trial-status">🗳 本審：有罪か無罪か・締切まで ${remain}　（${ph.main.total}人 投票済み）</div>`;
       body = `<div class="vote-btns">
         <button class="vote-btn guilty" data-tv="g" data-t="${t.id}">有罪</button>
         <button class="vote-btn innocent" data-tv="n" data-t="${t.id}">無罪</button>
       </div>
-      <div style="font-size:10px;color:var(--ink-soft);margin-top:6px">※投票中は内訳は見えへん。当事者は投票でけへん。締切後に開票</div>`;
-    } else if(v.state==='failed'){
-      statusLine = `<div class="trial-status" style="color:var(--ink-soft)">投票3人未満で不成立</div>`;
-      body = `<div class="verdict-box void">不成立（投票 ${v.total}人）金は動かん</div>`;
-    } else if(v.state==='void'){
-      statusLine = `<div class="trial-status" style="color:var(--ink-soft)">開票結果</div>`;
-      body = `<div class="verdict-box void">同点（有罪${v.g}・無罪${v.n}）→ 証拠不十分で無罪放免</div>`;
-    } else {
-      const guilty = v.state==='guilty';
+      <div style="font-size:10px;color:var(--ink-soft);margin-top:6px">※本審は3時間。内訳は締切まで非公開。当事者は投票でけへん。締切後に票数だけ開票</div>`;
+    } else if(ph.phase==='main_failed'){
+      statusLine = `<div class="trial-status" style="color:var(--ink-soft)">本審・不成立</div>`;
+      body = `<div class="verdict-box void">本審 投票3人未満で不成立（金は動かん）</div>`;
+    } else if(ph.phase==='main_void'){
+      statusLine = `<div class="trial-status" style="color:var(--ink-soft)">本審・開票</div>`;
+      body = `<div class="verdict-box void">同点（有罪${ph.main.g}・無罪${ph.main.n}）→ 無罪放免（金は動かん）</div>`;
+    } else { /* guilty / innocent */
+      const guilty = ph.phase==='main_guilty';
+      cls = guilty?'guilty':'innocent';
       const transfers = [];
       if(guilty){ t.defendants.forEach(d=>t.plaintiffs.forEach(p=>transfers.push(`${esc(d)} → ${esc(p)}：¥1,000`))); }
       else { t.plaintiffs.forEach(p=>t.defendants.forEach(d=>transfers.push(`${esc(p)} → ${esc(d)}：¥1,000`))); }
-      statusLine = `<div class="trial-status" style="color:var(--ink-soft)">開票結果（誰が入れたかは非公開）</div>`;
-      body = `<div class="verdict-box ${guilty?'guilty':'innocent'}">${guilty?'⚖️ 有罪':'🕊 無罪'}（有罪${v.g}・無罪${v.n}）</div>
+      statusLine = `<div class="trial-status" style="color:var(--ink-soft)">本審・開票（誰が入れたかは非公開）</div>`;
+      body = `<div class="verdict-box ${guilty?'guilty':'innocent'}">${guilty?'⚖️ 有罪':'🕊 無罪'}（有罪${ph.main.g}・無罪${ph.main.n}）</div>
         <div class="trial-transfers">${transfers.join('<br>')}</div>`;
     }
-    return `<div class="trial ${v.state==='guilty'?'guilty':v.state==='innocent'?'innocent':''}">
+    return `<div class="trial ${cls}">
       <div class="trial-t">⚖️ ${esc(t.title)}</div>
-      <div class="trial-meta">原告：<b>${plaintiffs}</b>　／　被告：<b>${defendants}</b></div>
+      <div class="trial-meta">原告：<b>${plaintiffs}</b>　／　被告：<b>${defendants}</b>${creator}</div>
       <div class="trial-reason">${esc(t.reason)}</div>
       ${statusLine}
       ${body}
@@ -737,21 +797,36 @@ function render(){
   /* 裁判の精算を収支に反映 */
   let trialMoved = 0;
   const gc = {};
+  const players0 = state.players||[];
   trialList().forEach(t=>{
-    const v = trialVerdict(t);
-    if(v.state==='guilty'){
+    const ph = trialPhase(t);
+    if(ph.phase==='main_guilty'){
       t.defendants.forEach(d=> t.plaintiffs.forEach(p=>{
         if(totals[d]!=null) totals[d]-=STAKE;
         if(totals[p]!=null) totals[p]+=STAKE;
         trialMoved += STAKE;
       }));
       t.defendants.forEach(d=>{ gc[d]=(gc[d]||0)+1; });
-    } else if(v.state==='innocent'){
+    } else if(ph.phase==='main_innocent'){
       t.plaintiffs.forEach(p=> t.defendants.forEach(d=>{
         if(totals[p]!=null) totals[p]-=STAKE;
         if(totals[d]!=null) totals[d]+=STAKE;
         trialMoved += STAKE;
       }));
+    }
+  });
+  /* 却下2回でBAN＋全員に¥1,000の罰金（到達した時点で1回だけ） */
+  const dc = dismissCounts();
+  const banFined = {};
+  Object.keys(dc).forEach(creator=>{
+    if(dc[creator] >= 2 && !banFined[creator]){
+      banFined[creator] = true;
+      players0.forEach(p=>{
+        if(p===creator) return;
+        if(totals[creator]!=null) totals[creator]-=STAKE;
+        if(totals[p]!=null) totals[p]+=STAKE;
+        trialMoved += STAKE;
+      });
     }
   });
 
@@ -764,9 +839,10 @@ function render(){
     const v=totals[p];
     const cls=v>0?'yen-plus':v<0?'yen-minus':'yen-zero';
     const gtag = gc[p] ? `<span class="guilty-tag">前科${gc[p]}</span>` : '';
+    const btag = (dc[p]||0)>=2 ? `<span class="guilty-tag" style="background:#555">起訴BAN</span>` : '';
     return `<div class="st-row">
       <div class="st-rank">${i+1}</div>
-      <div class="st-name">${esc(p)}${gtag}</div>
+      <div class="st-name">${esc(p)}${gtag}${btag}</div>
       <div class="st-rec">${records[p].w}勝${records[p].l}敗</div>
       <div class="st-yen ${cls}">${v>0?'+':''}¥${v.toLocaleString()}</div>
     </div>`;
@@ -1080,8 +1156,12 @@ function renderCountdowns(){
     if(!remain){ render(); return; }
     el.innerHTML = `受付中<br>締切まで ${remain}`;
   });
-  /* 裁判の締切が来てたら開票のため再描画 */
-  if(trialList().some(t=> Date.now()>t.deadline && Date.now()-t.deadline < 35000)) renderTrials();
+  /* 裁判の予審/本審の締切が来てたら再描画 */
+  if(trialList().some(t=>{
+    const a = Date.now()>t.preDeadline && Date.now()-t.preDeadline < 35000;
+    const b = Date.now()>t.deadline && Date.now()-t.deadline < 35000;
+    return a||b;
+  })) renderTrials();
 }
 
 function renderPlayersEdit(){
@@ -1090,7 +1170,20 @@ function renderPlayersEdit(){
 }
 
 function bind(){
-  /* ── 裁判：投票 ── */
+  /* ── 裁判：予審投票（受理/却下） ── */
+  document.querySelectorAll('[data-pv]').forEach(b=>{
+    b.onclick = async ()=>{
+      const t = (state.trials||{})[b.dataset.t];
+      if(!t) return;
+      if(Date.now() > t.preDeadline){ toast('予審は締切や'); return; }
+      const me = await whoAmI();
+      if(!me) return;
+      if((t.plaintiffs||[]).includes(me) || (t.defendants||[]).includes(me)){ toast('当事者は投票でけへんで'); return; }
+      db.ref(`kakebo/trials/${b.dataset.t}/preVotes/${me}`).set(b.dataset.pv);
+      toast('予審に投票したで（内訳は締切まで非公開）');
+    };
+  });
+  /* ── 裁判：本審投票（有罪/無罪） ── */
   document.querySelectorAll('[data-tv]').forEach(b=>{
     b.onclick = async ()=>{
       const t = (state.trials||{})[b.dataset.t];
