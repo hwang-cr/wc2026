@@ -661,6 +661,8 @@ function trialList(){
     const t=ts[id]; t.id=id;
     t.preVotes=t.preVotes||{}; t.votes=t.votes||{};
     t.plaintiffs=t.plaintiffs||[]; t.defendants=t.defendants||[];
+    /* 旧版（一審制）で作られた裁判は preDeadline が無い → 予審スキップの旧式扱い */
+    t.legacy = (t.preDeadline == null);
     return t;
   });
 }
@@ -692,6 +694,12 @@ function mainVerdict(t){
 }
 /* 全体フェーズ：pre_voting | dismissed | main_voting | guilty | innocent | void | failed */
 function trialPhase(t){
+  /* 旧式裁判は予審なし、いきなり本審。締切が無い古いデータは即開票扱い */
+  if(t.legacy){
+    if(t.deadline == null) t = Object.assign({}, t, {deadline: 0});
+    const main = mainVerdict(t);
+    return {phase:'main_'+(main.state==='voting'?'voting':main.state), main, legacy:true};
+  }
   const pre = preVerdict(t);
   if(pre.state==='voting')    return {phase:'pre_voting', pre};
   if(pre.state==='dismissed') return {phase:'dismissed', pre};
