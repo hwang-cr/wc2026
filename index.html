@@ -42,6 +42,7 @@
   .logo-sub{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:.45em;text-align:center;padding-left:.45em;color:var(--green);margin-top:2px}
   .logo-host{font-size:10px;text-align:center;letter-spacing:.16em;margin-top:5px;font-weight:700;color:var(--chalk-dim)}
   .stake-tag{display:block;width:max-content;margin:8px auto 0;font-size:11px;font-weight:700;color:#fff;background:var(--green);padding:3px 12px;border-radius:3px;letter-spacing:.08em}
+  .rate-tag{display:inline-block;font-size:10px;font-weight:900;color:#fff;background:var(--amber-deep);padding:1px 8px;border-radius:3px;margin-left:4px;letter-spacing:.04em}
   .board-stats{display:flex;margin-top:14px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
   .stat{flex:1;text-align:center;padding:10px 4px;border-right:1px solid var(--line)}
   .stat:last-child{border-right:none}
@@ -223,7 +224,7 @@
     <div class="logo-main">WORLD CUP <span class="gold">2026</span></div>
     <div class="logo-sub">賭けノート</div>
     <div class="logo-host">🇨🇦 CANADA · 🇲🇽 MEXICO · 🇺🇸 USA</div>
-    <span class="stake-tag">1対戦 ¥1,000</span>
+    <span class="stake-tag">1試合 ¥1,000 or ¥2,000</span>
     <div class="board-stats">
       <div class="stat"><div class="num" id="statMatches">0</div><div class="lbl">消化試合</div></div>
       <div class="stat"><div class="num" id="statMoved">¥0</div><div class="lbl">動いた金額</div></div>
@@ -284,7 +285,7 @@
         <p class="note">
           ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに¥1,000</b>払う（例：1人外して2人的中 → 外した人は¥2,000払い）。全員同じ選択 or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
           締切：キックオフ15分前まで変更可能。それ以降はロック。<br>
-          賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。3択も精算は同じで、当たった人で実質山分け。<br>
+          賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。レートも試合ごとに¥1,000か¥2,000を選べる。3択も精算は同じで、当たった人で実質山分け。<br>
           PIN：初めて自分の行を触るとき4〜8桁のPINを設定する。以降その行はPINを知ってる本人しか触れん（一度通した端末は次から入力不要）。PIN忘れたら管理人（ふぁんさ）に言うてリセットしてもらえ。<br>
           ⚖️裁判所：問題発言したやつを起訴（起訴人はPIN確認＆記録される）。①予審1時間「この裁判いるか？」を受理/却下で投票→受理多数で本審へ、却下多数・同点・3人未満は廃案。②本審3時間で有罪/無罪を投票→3人以上・過半数で判決、同点/3人未満はノーゲーム。当事者は投票不可、内訳は締切まで非公開（誰が入れたかは永久に秘密、票数だけ開票）。有罪→被告それぞれが原告それぞれに¥1,000ずつ／無罪→原告それぞれが被告それぞれに¥1,000ずつ（冤罪の罰）。有罪は1回で前科。却下2回でその起訴人は全員に¥1,000ずつ罰金＋起訴BAN（以後起訴でけへん）。廃案も晒される。<br>
           ※リンクを知ってる人全員が同じ帳簿をリアルタイムで見れる。ログイン不要。
@@ -588,6 +589,7 @@ function condText(m){
 }
 function is3way(m){ return m.mode==='3way'; }
 function hasCond(m){ return is3way(m) || (m.condTeam!=null && m.margin!=null); }
+function matchRate(m){ return (m.rate===2000) ? 2000 : 1000; }
 function deadline(m){ return m.kickoff - 15*60*1000; }
 function isLocked(m){ return Date.now() > deadline(m); }
 function kicked(m){ return Date.now() > m.kickoff; }
@@ -641,14 +643,15 @@ function settle(){
       });
     }
     if(isVoid){ info[m.id]={void:true,transfers:[]}; return; }
+    const rate = matchRate(m);
     const transfers = [];
     losers.forEach(l=>{
-      totals[l] -= winners.length*STAKE;
+      totals[l] -= winners.length*rate;
       records[l].l++;
-      winners.forEach(w=>{ transfers.push(`${esc(l)} <span class="arrow">→</span> ${esc(w)}：¥1,000`); });
+      winners.forEach(w=>{ transfers.push(`${esc(l)} <span class="arrow">→</span> ${esc(w)}：¥${rate.toLocaleString()}`); });
     });
-    winners.forEach(w=>{ totals[w] += losers.length*STAKE; records[w].w++; });
-    moved += winners.length*losers.length*STAKE;
+    winners.forEach(w=>{ totals[w] += losers.length*rate; records[w].w++; });
+    moved += winners.length*losers.length*rate;
     info[m.id] = { void:false, transfers };
   });
   return { totals, records, moved, info, stats };
@@ -1066,12 +1069,13 @@ function ticket(m, info){
   if(condSet){
     const chg = (!settled && !locked)
       ? ` <button class="cond-chg" data-cclr="${m.id}">変更</button>` : '';
+    const rateTag = `<span class="rate-tag">1試合 ¥${matchRate(m).toLocaleString()}</span>`;
     if(is3way(m)){
-      condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ハンデなし3択${chg}<br>
+      condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ハンデなし3択 ${rateTag}${chg}<br>
         <span class="vs">${esc(shortA)}勝ち / 引き分け / ${esc(shortB)}勝ち から選ぶ。当たった人で山分け</span></div>`;
     } else {
       const oppSide = m.condTeam==='A' ? shortB : shortA;
-      condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ${esc(condText(m))}${chg}<br>
+      condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ${esc(condText(m))} ${rateTag}${chg}<br>
         <span class="vs">${esc(m.condTeam==='A'?shortA:shortB)} に賭ける＝条件どおりなら勝ち／${esc(oppSide)} に賭ける＝条件が崩れたら勝ち</span></div>`;
     }
   } else if(!locked) {
@@ -1080,6 +1084,10 @@ function ticket(m, info){
         <select data-cmode="${m.id}">
           <option value="hc">ハンデ付き2択</option>
           <option value="3way">ハンデなし3択（勝ち/分け/負け）</option>
+        </select>
+        <select data-crate="${m.id}">
+          <option value="1000">レート ¥1,000</option>
+          <option value="2000">レート ¥2,000</option>
         </select>
       </div>
       <div class="cond-set" data-hcrow="${m.id}">
@@ -1293,21 +1301,23 @@ function bind(){
     b.onclick = ()=>{
       const mid = b.dataset.cset;
       const mode = document.querySelector(`[data-cmode="${mid}"]`).value;
+      const rateEl = document.querySelector(`[data-crate="${mid}"]`);
+      const rate = rateEl ? Number(rateEl.value) : 1000;
       if(mode==='3way'){
-        db.ref(`kakebo/matches/${mid}`).update({ mode:'3way', condTeam:null, margin:null });
-        toast('3択でセット、受付開始や');
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'3way', condTeam:null, margin:null, rate });
+        toast(`3択・¥${rate.toLocaleString()}でセット、受付開始や`);
       }else{
         const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
         const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
-        db.ref(`kakebo/matches/${mid}`).update({ mode:'hc', condTeam:ct, margin:mg });
-        toast('条件セット、受付開始や');
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'hc', condTeam:ct, margin:mg, rate });
+        toast(`条件・¥${rate.toLocaleString()}でセット、受付開始や`);
       }
     };
   });
   document.querySelectorAll('[data-cclr]').forEach(b=>{
     b.onclick = async ()=>{
       if(!await ask('条件を変更すると全員の選択もリセットされる。ええか？')) return;
-      db.ref(`kakebo/matches/${b.dataset.cclr}`).update({ mode:null, condTeam:null, margin:null, picks:null });
+      db.ref(`kakebo/matches/${b.dataset.cclr}`).update({ mode:null, condTeam:null, margin:null, rate:null, picks:null });
     };
   });
 }
