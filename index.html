@@ -177,6 +177,10 @@
   .meter-bar span{display:block;height:100%}
   .meter-lbl{display:flex;justify-content:space-between;margin-top:5px;font-size:11px;font-weight:900;color:var(--ink-soft)}
   .unvoted{margin-top:8px;font-size:12px;font-weight:700;color:#C0392B;background:#FBECEA;border:1px solid #F0CFC9;border-radius:5px;padding:7px 10px;line-height:1.5}
+  .blind-line{margin-top:10px;font-size:12px;font-weight:700;color:var(--ink-soft);background:var(--soft);border-radius:5px;padding:7px 10px}
+  .settle-flag{margin-top:8px;font-size:12px;font-weight:900;border-radius:5px;padding:7px 10px}
+  .settle-flag.ok{color:#1E6B4F;background:#EAF4EE;border:1px solid #BfE0CC}
+  .settle-flag.warn{color:#9A6B00;background:#FBF3DF;border:1px solid #EAD9A8}
   /* ── 裁判所 ── */
   .trial{background:#fff;border:1px solid var(--card-edge);border-radius:10px;padding:14px;margin-bottom:12px;border-top:3px solid #7A4FA3}
   .trial.guilty{border-top-color:#C0392B}
@@ -284,7 +288,8 @@
         <button class="btn-main" id="savePlayers">名前を保存</button>
         <p class="note">
           ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに¥1,000</b>払う（例：1人外して2人的中 → 外した人は¥2,000払い）。全員同じ選択 or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
-          締切：キックオフ15分前まで変更可能。それ以降はロック。<br>
+          目隠し投票：締切までは誰がどっちに賭けたかは非公開。「投票したか／成立してるか」だけ見える（自分の選択は自分だけ見える）。締切が来たら全公開＋人気メーターも開票。<br>
+          締切：キックオフ15分前まで変更可能。それ以降はロック＆開票。<br>
           賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。レートも試合ごとに¥1,000か¥2,000を選べる。3択も精算は同じで、当たった人で実質山分け。<br>
           PIN：初めて自分の行を触るとき4〜8桁のPINを設定する。以降その行はPINを知ってる本人しか触れん（一度通した端末は次から入力不要）。PIN忘れたら管理人（ふぁんさ）に言うてリセットしてもらえ。<br>
           ⚖️裁判所：問題発言したやつを起訴（起訴人はPIN確認＆記録される）。①予審1時間「この裁判いるか？」を受理/却下で投票→受理多数で本審へ、却下多数・同点・3人未満は廃案。②本審3時間で有罪/無罪を投票→3人以上・過半数で判決、同点/3人未満はノーゲーム。当事者は投票不可、内訳は締切まで非公開（誰が入れたかは永久に秘密、票数だけ開票）。有罪→被告それぞれが原告それぞれに¥1,000ずつ／無罪→原告それぞれが被告それぞれに¥1,000ずつ（冤罪の罰）。有罪は1回で前科。却下2回でその起訴人は全員に¥1,000ずつ罰金＋起訴BAN（以後起訴でけへん）。廃案も晒される。<br>
@@ -997,8 +1002,12 @@ function ticket(m, info){
   let rows = '';
   if(condSet){
     const threeWay = is3way(m);
+    const revealed = settled || locked;   /* 締切後 or 結果確定で全公開 */
+    const myIds = getIds();               /* この端末で認証済みの本人だけ自分の選択が見える */
     rows = (state.players||[]).map(p=>{
       const pick = m.picks[p] || null;
+      const mine = (state.pins && state.pins[p] && myIds[p]===state.pins[p]); /* 自分か */
+      const showPick = revealed || mine;  /* 公開後 or 自分のだけ実際の選択を見せる */
       let mark = `<span class="p-mark"></span>`;
       if(settled && pick && info[m.id] && !info[m.id].void){
         mark = pick===m.result
@@ -1006,26 +1015,34 @@ function ticket(m, info){
           : `<span class="p-mark mk-lose">✕</span>`;
       } else if(settled && pick){
         mark = `<span class="p-mark">−</span>`;
+      } else if(!revealed){
+        /* 締切前：投票済みかどうかだけ見せる */
+        mark = pick ? `<span class="p-mark" style="color:var(--green)">●</span>`
+                    : `<span class="p-mark" style="color:#C0392B;font-size:11px">未</span>`;
       }
       const dis = (settled||locked) ? 'disabled' : '';
+      /* 締切前は、自分のボタン以外は選択状態を出さない（目隠し） */
+      const onA = (showPick && pick==='A') ? (threeWay?'on-A':'on-A') : '';
+      const onD = (showPick && pick==='D') ? 'on-D' : '';
+      const onB = (showPick && pick==='B') ? 'on-B' : '';
       if(threeWay){
         return `<div class="pick-row">
           <div class="p-name">${esc(p)}</div>
-          <button class="p-btn p3 ${pick==='A'?'on-A':''}" data-side="A" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortA)}</button>
-          <button class="p-btn p3 ${pick==='D'?'on-D':''}" data-side="D" data-m="${m.id}" data-p="${esc(p)}" ${dis}>分け</button>
-          <button class="p-btn p3 ${pick==='B'?'on-B':''}" data-side="B" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortB)}</button>
+          <button class="p-btn p3 ${onA}" data-side="A" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortA)}</button>
+          <button class="p-btn p3 ${onD}" data-side="D" data-m="${m.id}" data-p="${esc(p)}" ${dis}>分け</button>
+          <button class="p-btn p3 ${onB}" data-side="B" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortB)}</button>
           ${mark}
         </div>`;
       }
       return `<div class="pick-row">
         <div class="p-name">${esc(p)}</div>
-        <button class="p-btn ${pick==='A'?'on-A':''}" data-side="A" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortA)}</button>
-        <button class="p-btn ${pick==='B'?'on-B':''}" data-side="B" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortB)}</button>
+        <button class="p-btn ${onA}" data-side="A" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortA)}</button>
+        <button class="p-btn ${onB}" data-side="B" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(shortB)}</button>
         ${mark}
       </div>`;
     }).join('');
 
-    /* 人気メーター＋未投票表示（締切前のみ意味がある） */
+    /* 集計（成立判定に使う） */
     const allP = state.players||[];
     const cnt = {A:0,D:0,B:0};
     allP.forEach(p=>{ if(m.picks[p]) cnt[m.picks[p]]++; });
@@ -1033,28 +1050,42 @@ function ticket(m, info){
     const unvoted = allP.filter(p=>!m.picks[p]);
     const totalV = voted || 1;
     const threeWay2 = is3way(m);
-    let meter;
-    if(threeWay2){
-      meter = `<div class="meter">
-        <div class="meter-bar">
-          <span style="width:${cnt.A/totalV*100}%;background:var(--win)"></span>
-          <span style="width:${cnt.D/totalV*100}%;background:#8A6D2F"></span>
-          <span style="width:${cnt.B/totalV*100}%;background:#1F5276"></span>
-        </div>
-        <div class="meter-lbl"><span>${esc(shortA)} ${cnt.A}</span><span>分け ${cnt.D}</span><span>${esc(shortB)} ${cnt.B}</span></div>
-      </div>`;
-    }else{
-      meter = `<div class="meter">
-        <div class="meter-bar">
-          <span style="width:${cnt.A/totalV*100}%;background:var(--win)"></span>
-          <span style="width:${cnt.B/totalV*100}%;background:#1F5276"></span>
-        </div>
-        <div class="meter-lbl"><span>${esc(shortA)} ${cnt.A}</span><span>${esc(shortB)} ${cnt.B}</span></div>
-      </div>`;
+    const revealed2 = settled || locked;
+
+    if(revealed2){
+      /* 締切後：人気メーターを全公開 */
+      let meter;
+      if(threeWay2){
+        meter = `<div class="meter">
+          <div class="meter-bar">
+            <span style="width:${cnt.A/totalV*100}%;background:var(--win)"></span>
+            <span style="width:${cnt.D/totalV*100}%;background:#8A6D2F"></span>
+            <span style="width:${cnt.B/totalV*100}%;background:#1F5276"></span>
+          </div>
+          <div class="meter-lbl"><span>${esc(shortA)} ${cnt.A}</span><span>分け ${cnt.D}</span><span>${esc(shortB)} ${cnt.B}</span></div>
+        </div>`;
+      }else{
+        meter = `<div class="meter">
+          <div class="meter-bar">
+            <span style="width:${cnt.A/totalV*100}%;background:var(--win)"></span>
+            <span style="width:${cnt.B/totalV*100}%;background:#1F5276"></span>
+          </div>
+          <div class="meter-lbl"><span>${esc(shortA)} ${cnt.A}</span><span>${esc(shortB)} ${cnt.B}</span></div>
+        </div>`;
+      }
+      rows += (voted ? meter : '');
+    } else {
+      /* 締切前：目隠し。投票数と成立フラグだけ見せる */
+      const sidesUsed = ['A','D','B'].filter(s=>cnt[s]>0).length;
+      const willSettle = sidesUsed >= 2;  /* 2side以上に割れてたら成立見込み */
+      const flag = willSettle
+        ? `<div class="settle-flag ok">✅ 成立（賭けが割れてる）</div>`
+        : `<div class="settle-flag warn">⚠️ まだノーゲーム（みんな同じ側 or 片側のみ）</div>`;
+      const blindLine = `<div class="blind-line">🔒 締切まで誰がどっちに賭けたかは非公開（${voted}/${allP.length}人 投票済み）</div>`;
+      const unvotedLine = unvoted.length
+        ? `<div class="unvoted">⚠️ 未投票 ${unvoted.length}人：${unvoted.map(esc).join('・')}</div>` : '';
+      rows += blindLine + flag + unvotedLine;
     }
-    const unvotedLine = (!settled && unvoted.length)
-      ? `<div class="unvoted">⚠️ 未投票 ${unvoted.length}人：${unvoted.map(esc).join('・')}</div>` : '';
-    rows += (voted ? meter : '') + unvotedLine;
   }
 
   let dl = '';
