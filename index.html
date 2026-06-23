@@ -228,10 +228,10 @@
     <div class="logo-main">WORLD CUP <span class="gold">2026</span></div>
     <div class="logo-sub">賭けノート</div>
     <div class="logo-host">🇨🇦 CANADA · 🇲🇽 MEXICO · 🇺🇸 USA</div>
-    <span class="stake-tag">1試合 ¥1,000 or ¥2,000</span>
+    <span class="stake-tag">1試合 1,000 or 2,000ペリカ</span>
     <div class="board-stats">
       <div class="stat"><div class="num" id="statMatches">0</div><div class="lbl">消化試合</div></div>
-      <div class="stat"><div class="num" id="statMoved">¥0</div><div class="lbl">動いた金額</div></div>
+      <div class="stat"><div class="num" id="statMoved">0</div><div class="lbl">動いた金額</div></div>
       <div class="stat"><div class="num" id="statPlayers">0</div><div class="lbl">メンバー</div></div>
     </div>
   </header>
@@ -280,6 +280,11 @@
       <div class="fold-inner"><div id="settledMatches"></div></div>
     </details>
 
+    <details class="fold" id="foldChampion">
+      <summary>🏆 優勝予想</summary>
+      <div class="fold-inner"><div id="championPanel"></div></div>
+    </details>
+
     <details class="fold" id="foldMembers">
       <summary>メンバー・ルール</summary>
       <div class="fold-inner">
@@ -287,12 +292,12 @@
         <button class="btn-sub" id="addPlayer">＋ メンバー追加</button>
         <button class="btn-main" id="savePlayers">名前を保存</button>
         <p class="note">
-          ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに¥1,000</b>払う（例：1人外して2人的中 → 外した人は¥2,000払い）。全員同じ選択 or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
-          目隠し投票：締切までは誰がどっちに賭けたかは非公開。「投票したか／成立してるか」だけ見える（自分の選択は自分だけ見える）。締切が来たら全公開＋人気メーターも開票。<br>
+          ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに1,000ペリカ</b>払う（例：1人外して2人的中 → 外した人は2,000ペリカ払い）。全員同じ選択 or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
+          目隠し投票：締切までは誰がどっちに賭けたか・成立してるかは全部非公開。「投票したか」と投票数だけ見える（自分の選択は自分だけ見える）。締切が来たら全公開＋人気メーターも開票。<br>
           締切：キックオフ15分前まで変更可能。それ以降はロック＆開票。<br>
-          賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。レートも試合ごとに¥1,000か¥2,000を選べる。3択も精算は同じで、当たった人で実質山分け。<br>
+          賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。レートも試合ごとに1,000か2,000ペリカを選べる。3択も精算は同じで、当たった人で実質山分け。<br>
           PIN：初めて自分の行を触るとき4〜8桁のPINを設定する。以降その行はPINを知ってる本人しか触れん（一度通した端末は次から入力不要）。PIN忘れたら管理人（ふぁんさ）に言うてリセットしてもらえ。<br>
-          ⚖️裁判所：問題発言したやつを起訴（起訴人はPIN確認＆記録される）。①予審1時間「この裁判いるか？」を受理/却下で投票→受理多数で本審へ、却下多数・同点・3人未満は廃案。②本審3時間で有罪/無罪を投票→3人以上・過半数で判決、同点/3人未満はノーゲーム。当事者は投票不可、内訳は締切まで非公開（誰が入れたかは永久に秘密、票数だけ開票）。有罪→被告それぞれが原告それぞれに¥1,000ずつ／無罪→原告それぞれが被告それぞれに¥1,000ずつ（冤罪の罰）。有罪は1回で前科。却下2回でその起訴人は全員に¥1,000ずつ罰金＋起訴BAN（以後起訴でけへん）。廃案も晒される。<br>
+          ⚖️裁判所：問題発言したやつを起訴（起訴人はPIN確認＆記録される）。①予審1時間「この裁判いるか？」を受理/却下で投票→受理多数で本審へ、却下多数・同点・3人未満は廃案。②本審3時間で有罪/無罪を投票→3人以上・過半数で判決、同点/3人未満はノーゲーム。当事者は投票不可、内訳は締切まで非公開（誰が入れたかは永久に秘密、票数だけ開票）。有罪→被告それぞれが原告それぞれに1,000ペリカずつ／無罪→原告それぞれが被告それぞれに1,000ペリカずつ（冤罪の罰）。有罪は1回で前科。却下2回でその起訴人は全員に1,000ペリカずつ罰金＋起訴BAN（以後起訴でけへん）。廃案も晒される。<br>
           ※リンクを知ってる人全員が同じ帳簿をリアルタイムで見れる。ログイン不要。
         </p>
       </div>
@@ -330,6 +335,17 @@ const firebaseConfig = {
 };
 
 const STAKE = 1000;
+const CHAMPION_STAKE = 10000;
+/* 優勝予想（確定・変更不可）。flag は表示用、country は判定キー */
+const CHAMPION_PICKS = [
+  {player:'よんす',   flag:'🇵🇹', country:'ポルトガル'},
+  {player:'さんふぁん', flag:'🇫🇷', country:'フランス'},
+  {player:'ふぁんさ',  flag:'🇪🇸', country:'スペイン'},
+  {player:'がんひょん', flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', country:'イングランド'},
+  {player:'よんじゅ',  flag:'🇦🇷', country:'アルゼンチン'},
+  {player:'りゅんで',  flag:'🇫🇷', country:'フランス'},
+  {player:'りき',     flag:'🇪🇸', country:'スペイン'},
+];
 let state = null;
 let db = null;
 
@@ -595,6 +611,7 @@ function condText(m){
 function is3way(m){ return m.mode==='3way'; }
 function hasCond(m){ return is3way(m) || (m.condTeam!=null && m.margin!=null); }
 function matchRate(m){ return (m.rate===2000) ? 2000 : 1000; }
+function peri(n){ return Number(n).toLocaleString()+'ペリカ'; }
 function deadline(m){ return m.kickoff - 15*60*1000; }
 function isLocked(m){ return Date.now() > deadline(m); }
 function kicked(m){ return Date.now() > m.kickoff; }
@@ -653,7 +670,7 @@ function settle(){
     losers.forEach(l=>{
       totals[l] -= winners.length*rate;
       records[l].l++;
-      winners.forEach(w=>{ transfers.push(`${esc(l)} <span class="arrow">→</span> ${esc(w)}：¥${rate.toLocaleString()}`); });
+      winners.forEach(w=>{ transfers.push(`${esc(l)} <span class="arrow">→</span> ${esc(w)}：${peri(rate)}`); });
     });
     winners.forEach(w=>{ totals[w] += losers.length*rate; records[w].w++; });
     moved += winners.length*losers.length*rate;
@@ -778,8 +795,8 @@ function renderTrials(){
       const guilty = ph.phase==='main_guilty';
       cls = guilty?'guilty':'innocent';
       const transfers = [];
-      if(guilty){ t.defendants.forEach(d=>t.plaintiffs.forEach(p=>transfers.push(`${esc(d)} → ${esc(p)}：¥1,000`))); }
-      else { t.plaintiffs.forEach(p=>t.defendants.forEach(d=>transfers.push(`${esc(p)} → ${esc(d)}：¥1,000`))); }
+      if(guilty){ t.defendants.forEach(d=>t.plaintiffs.forEach(p=>transfers.push(`${esc(d)} → ${esc(p)}：${peri(1000)}`))); }
+      else { t.plaintiffs.forEach(p=>t.defendants.forEach(d=>transfers.push(`${esc(p)} → ${esc(d)}：${peri(1000)}`))); }
       statusLine = `<div class="trial-status" style="color:var(--ink-soft)">本審・開票（誰が入れたかは非公開）</div>`;
       body = `<div class="verdict-box ${guilty?'guilty':'innocent'}">${guilty?'⚖️ 有罪':'🕊 無罪'}（有罪${ph.main.g}・無罪${ph.main.n}）</div>
         <div class="trial-transfers">${transfers.join('<br>')}</div>`;
@@ -792,6 +809,52 @@ function renderTrials(){
       ${body}
     </div>`;
   }).join('');
+}
+
+/* 優勝予想：勝った国（state.champion）が入ってたら精算。返り値 {winners, settled, totalsDelta} */
+function championSettle(){
+  const champ = state.champion || null;  /* 例: 'フランス' */
+  const delta = {};
+  CHAMPION_PICKS.forEach(c=>{ delta[c.player]=0; });
+  if(!champ) return {champ:null, winners:[], delta, moved:0};
+  const winners = CHAMPION_PICKS.filter(c=>c.country===champ).map(c=>c.player);
+  const losers  = CHAMPION_PICKS.filter(c=>c.country!==champ).map(c=>c.player);
+  let moved = 0;
+  if(winners.length>0){
+    const pool = losers.length * CHAMPION_STAKE;
+    const share = winners.length ? Math.round(pool/winners.length) : 0;
+    losers.forEach(l=>{ delta[l]-=CHAMPION_STAKE; });
+    winners.forEach(w=>{ delta[w]+=share; });
+    moved = pool;
+  } /* winners 0 → 誰も当たらん → ノーゲーム（delta全0） */
+  return {champ, winners, delta, moved};
+}
+
+function renderChampion(){
+  const box = document.getElementById('championPanel');
+  if(!box) return;
+  const cs = championSettle();
+  const champ = cs.champ;
+  const rows = CHAMPION_PICKS.map(c=>{
+    const win = champ && c.country===champ;
+    return `<div class="champ-row ${win?'win':''}">
+      <span class="champ-flag">${c.flag}</span>
+      <span class="champ-player">${esc(c.player)}</span>
+      <span class="champ-country">${esc(c.country)}</span>
+      ${champ ? (win?`<span class="champ-amt plus">+${peri(cs.delta[c.player])}</span>`
+                    :`<span class="champ-amt minus">${peri(cs.delta[c.player])}</span>`)
+              : `<span class="champ-amt pending">—</span>`}
+    </div>`;
+  }).join('');
+  let head;
+  if(!champ){
+    head = `<div class="champ-head">場代 ${peri(CHAMPION_STAKE)}・当選者の総取り（複数なら山分け）<br><span style="color:var(--ink-soft)">優勝国が決まったら精算。予想外の国が優勝なら全員ノーゲーム</span></div>`;
+  } else if(cs.winners.length===0){
+    head = `<div class="champ-head">🏆 優勝：<b>${esc(champ)}</b> → 誰も当てられず、全員ノーゲーム（金は動かん）</div>`;
+  } else {
+    head = `<div class="champ-head">🏆 優勝：<b>${esc(champ)}</b> → 的中 ${cs.winners.map(esc).join('・')}　1人 +${peri(Math.round(cs.winners.length?(CHAMPION_PICKS.filter(c=>c.country!==champ).length*CHAMPION_STAKE)/cs.winners.length:0))}</div>`;
+  }
+  box.innerHTML = head + `<div class="champ-list">${rows}</div>`;
 }
 
 function fmtDate(ts){
@@ -831,7 +894,7 @@ function render(){
       }));
     }
   });
-  /* 却下2回でBAN＋全員に¥1,000の罰金（到達した時点で1回だけ） */
+  /* 却下2回でBAN＋全員に1,000ペリカの罰金（到達した時点で1回だけ） */
   const dc = dismissCounts();
   const banFined = {};
   Object.keys(dc).forEach(creator=>{
@@ -846,8 +909,15 @@ function render(){
     }
   });
 
+  /* 優勝予想の精算を収支に反映 */
+  const champRes = championSettle();
+  let champMoved = champRes.moved;
+  Object.keys(champRes.delta).forEach(p=>{
+    if(totals[p]!=null) totals[p]+=champRes.delta[p];
+  });
+
   document.getElementById('statMatches').textContent = all.filter(m=>m.result).length;
-  document.getElementById('statMoved').textContent = '¥'+(moved+trialMoved).toLocaleString();
+  document.getElementById('statMoved').textContent = peri(moved+trialMoved+champMoved);
   document.getElementById('statPlayers').textContent = (state.players||[]).length;
 
   const ranked = [...(state.players||[])].sort((a,b)=>totals[b]-totals[a]);
@@ -860,11 +930,12 @@ function render(){
       <div class="st-rank">${i+1}</div>
       <div class="st-name">${esc(p)}${gtag}${btag}</div>
       <div class="st-rec">${records[p].w}勝${records[p].l}敗</div>
-      <div class="st-yen ${cls}">${v>0?'+':''}¥${v.toLocaleString()}</div>
+      <div class="st-yen ${cls}">${v>0?'+':''}${peri(v)}</div>
     </div>`;
   }).join('');
 
   renderTrials();
+  renderChampion();
 
   /* ── 戦績スタッツ：的中率・連勝・逆張り王 ── */
   const players = state.players||[];
@@ -1075,16 +1146,11 @@ function ticket(m, info){
       }
       rows += (voted ? meter : '');
     } else {
-      /* 締切前：目隠し。投票数と成立フラグだけ見せる */
-      const sidesUsed = ['A','D','B'].filter(s=>cnt[s]>0).length;
-      const willSettle = sidesUsed >= 2;  /* 2side以上に割れてたら成立見込み */
-      const flag = willSettle
-        ? `<div class="settle-flag ok">✅ 成立（賭けが割れてる）</div>`
-        : `<div class="settle-flag warn">⚠️ まだノーゲーム（みんな同じ側 or 片側のみ）</div>`;
-      const blindLine = `<div class="blind-line">🔒 締切まで誰がどっちに賭けたかは非公開（${voted}/${allP.length}人 投票済み）</div>`;
+      /* 締切前：完全目隠し。投票数だけ見せる（成立/不成立も隠す） */
+      const blindLine = `<div class="blind-line">🔒 締切まで誰がどっちに賭けたか・成立してるかは非公開（${voted}/${allP.length}人 投票済み）</div>`;
       const unvotedLine = unvoted.length
         ? `<div class="unvoted">⚠️ 未投票 ${unvoted.length}人：${unvoted.map(esc).join('・')}</div>` : '';
-      rows += blindLine + flag + unvotedLine;
+      rows += blindLine + unvotedLine;
     }
   }
 
@@ -1100,7 +1166,7 @@ function ticket(m, info){
   if(condSet){
     const chg = (!settled && !locked)
       ? ` <button class="cond-chg" data-cclr="${m.id}">変更</button>` : '';
-    const rateTag = `<span class="rate-tag">1試合 ¥${matchRate(m).toLocaleString()}</span>`;
+    const rateTag = `<span class="rate-tag">1試合 ${peri(matchRate(m))}</span>`;
     if(is3way(m)){
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ハンデなし3択 ${rateTag}${chg}<br>
         <span class="vs">${esc(shortA)}勝ち / 引き分け / ${esc(shortB)}勝ち から選ぶ。当たった人で山分け</span></div>`;
@@ -1117,8 +1183,8 @@ function ticket(m, info){
           <option value="3way">ハンデなし3択（勝ち/分け/負け）</option>
         </select>
         <select data-crate="${m.id}">
-          <option value="1000">レート ¥1,000</option>
-          <option value="2000">レート ¥2,000</option>
+          <option value="1000">レート 1,000ペリカ</option>
+          <option value="2000">レート 2,000ペリカ</option>
         </select>
       </div>
       <div class="cond-set" data-hcrow="${m.id}">
@@ -1337,12 +1403,12 @@ function bind(){
       const rate = rateEl ? Number(rateEl.value) : 1000;
       if(mode==='3way'){
         db.ref(`kakebo/matches/${mid}`).update({ mode:'3way', condTeam:null, margin:null, rate });
-        toast(`3択・¥${rate.toLocaleString()}でセット、受付開始や`);
+        toast(`3択・${peri(rate)}でセット、受付開始や`);
       }else{
         const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
         const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
         db.ref(`kakebo/matches/${mid}`).update({ mode:'hc', condTeam:ct, margin:mg, rate });
-        toast(`条件・¥${rate.toLocaleString()}でセット、受付開始や`);
+        toast(`条件・${peri(rate)}でセット、受付開始や`);
       }
     };
   });
