@@ -43,6 +43,7 @@
   .logo-host{font-size:10px;text-align:center;letter-spacing:.16em;margin-top:5px;font-weight:700;color:var(--chalk-dim)}
   .stake-tag{display:block;width:max-content;margin:8px auto 0;font-size:11px;font-weight:700;color:#fff;background:var(--green);padding:3px 12px;border-radius:3px;letter-spacing:.08em}
   .rate-tag{display:inline-block;font-size:10px;font-weight:900;color:#fff;background:var(--amber-deep);padding:1px 8px;border-radius:3px;margin-left:4px;letter-spacing:.04em}
+  .by-log{font-size:10px;color:var(--ink-soft);font-weight:700}
   .board-stats{display:flex;margin-top:14px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
   .stat{flex:1;text-align:center;padding:10px 4px;border-right:1px solid var(--line)}
   .stat:last-child{border-right:none}
@@ -167,6 +168,23 @@
   .stat-nm{flex:1;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .stat-sub{font-size:10px;color:var(--chalk-dim)}
   .stat-big{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--chalk);min-width:46px;text-align:right}
+  /* 参加率グラフ */
+  .part-overall{margin-bottom:14px}
+  .part-od{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .part-od-l{width:54px;font-size:11px;font-weight:900;line-height:1.2}
+  .part-od-bar{flex:1;height:14px;background:#ECEAE2;border-radius:7px;overflow:hidden}
+  .part-od-bar span{display:block;height:100%;border-radius:7px}
+  .part-od-v{width:40px;text-align:right;font-family:'Bebas Neue',sans-serif;font-size:16px}
+  .part-head{font-size:11px;font-weight:900;color:var(--ink-soft);margin:10px 0 8px}
+  .part-row{display:flex;align-items:flex-end;gap:8px;margin-bottom:10px}
+  .part-name{width:64px;font-size:12px;font-weight:700}
+  .part-cells{flex:1;display:flex;gap:10px}
+  .part-cell{flex:1;display:flex;flex-direction:column;align-items:center}
+  .part-cell-bar{width:24px;height:46px;background:#EFEDE5;border-radius:4px;display:flex;align-items:flex-end;overflow:hidden}
+  .part-cell-bar span{display:block;width:100%;border-radius:4px 4px 0 0}
+  .part-cell-v{font-size:10px;font-weight:900;margin-top:3px}
+  .part-legend{display:flex;gap:10px;padding-left:72px}
+  .part-legend span{flex:1;text-align:center;font-size:9px;color:var(--ink-soft)}
   .streak-fire{font-size:10px;font-weight:900;color:#FF8A3D;white-space:nowrap}
   .cmt-show{font-size:12px;font-weight:700;color:var(--ink);background:#EFE8D4;border-radius:5px;padding:7px 10px;margin-top:8px;line-height:1.5}
   .cmt-edit{font-size:10px;color:var(--ink-soft);background:none;border:1px solid #CFC6AE;border-radius:3px;padding:1px 7px;cursor:pointer;font-family:inherit;margin-left:4px}
@@ -262,6 +280,11 @@
       <div class="fold-inner"><div id="statsPanel"></div></div>
     </details>
 
+    <details class="fold" id="foldParticipation">
+      <summary>📊 参加率（節ごと）</summary>
+      <div class="fold-inner"><div id="participationPanel"></div></div>
+    </details>
+
     <details class="fold" id="foldStandings">
       <summary>順位表</summary>
       <div class="fold-inner">
@@ -291,12 +314,13 @@
       <div class="fold-inner">
         <div class="players-edit" id="playersEdit"></div>
         <button class="btn-sub" id="addPlayer">＋ メンバー追加</button>
-        <button class="btn-main" id="savePlayers">名前を保存</button>
-        <p class="note">
+        <button class="btn-main" id="savePlayers">名前を保存（管理人のみ）</button>
+        <p class="note" style="margin-top:8px">
+          🔒 名前・メンバーの変更は<b>管理人（さんふぁん）専用PIN</b>が要る。なりすまし・収支すり替え防止や。<br>
           ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに1,000ペリカ</b>払う（例：1人外して2人的中 → 外した人は2,000ペリカ払い）。全員同じ選択 or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
           目隠し投票：締切までは誰がどっちに賭けたか・成立してるかは全部非公開。「投票したか」と投票数だけ見える（自分の選択は自分だけ見える）。締切が来たら全公開＋人気メーターも開票。<br>
           締切：キックオフ15分前まで変更可能。それ以降はロック＆開票。<br>
-          賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。レートも試合ごとに1,000か2,000ペリカを選べる。3択も精算は同じで、当たった人で実質山分け。<br>
+          賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。レートも試合ごとに1,000/2,000/3,000ペリカを選べる。条件・スコアを設定した人は記録される。3択も精算は同じで、当たった人で実質山分け。<br>
           PIN：初めて自分の行を触るとき4〜8桁のPINを設定する。以降その行はPINを知ってる本人しか触れん（一度通した端末は次から入力不要）。PIN忘れたら管理人（ふぁんさ）に言うてリセットしてもらえ。<br>
           ⚖️裁判所：問題発言したやつを起訴（起訴人はPIN確認＆記録される）。①予審1時間「この裁判いるか？」を受理/却下で投票→受理多数で本審へ、却下多数・同点・3人未満は廃案。②本審3時間で有罪/無罪を投票→3人以上・過半数で判決、同点/3人未満はノーゲーム。当事者は投票不可、内訳は締切まで非公開（誰が入れたかは永久に秘密、票数だけ開票）。有罪→被告それぞれが原告それぞれに1,000ペリカずつ／無罪→原告それぞれが被告それぞれに1,000ペリカずつ（冤罪の罰）。有罪は1回で前科。却下2回でその起訴人は全員に1,000ペリカずつ罰金＋起訴BAN（以後起訴でけへん）。廃案も晒される。<br>
           ※リンクを知ってる人全員が同じ帳簿をリアルタイムで見れる。ログイン不要。
@@ -337,6 +361,19 @@ const firebaseConfig = {
 
 const STAKE = 1000;
 const CHAMPION_STAKE = 10000;
+const ADMIN = 'さんふぁん';   /* 管理人：名前・メンバー編集はこの人の管理人PINが要る */
+/* グループリーグの節（日本時間の日付で判定）。第3節は6/25〜6/27 */
+const MATCHDAYS = [
+  {label:'第1節', from:'2026-06-12', to:'2026-06-18'},
+  {label:'第2節', from:'2026-06-19', to:'2026-06-24'},
+  {label:'第3節', from:'2026-06-25', to:'2026-06-27'},
+];
+function matchdayOf(ts){
+  const d = new Date(ts + 9*3600000);
+  const ymd = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+  for(const md of MATCHDAYS){ if(ymd>=md.from && ymd<=md.to) return md.label; }
+  return null; /* トーナメント等は対象外 */
+}
 /* 優勝予想（確定・変更不可）。flag は表示用、country は判定キー */
 const CHAMPION_PICKS = [
   {player:'よんす',   flag:'🇵🇹', country:'ポルトガル'},
@@ -554,6 +591,30 @@ function pickPlayer(){
   });
 }
 
+/* 管理人認証：投票用PINとは別の「管理人PIN」。初回は設定、以降は照合。端末に記憶 */
+function getAdminFlag(){ return localStorage.getItem('kakebo-admin')||''; }
+function setAdminFlag(h){ localStorage.setItem('kakebo-admin', h); }
+async function verifyAdmin(){
+  const stored = state.adminPin || null;
+  if(!stored){
+    const pin = await askPin(`管理人（${ADMIN}）PINを新規設定`, '名前・メンバー編集に使う専用PIN。投票用とは別に決めて、他の人には教えんといて');
+    if(pin===null) return false;
+    if(!/^\d{4,8}$/.test(pin)){ toast('数字4〜8桁でな'); return false; }
+    const h = await sha('admin:'+pin);
+    db.ref('kakebo/adminPin').set(h);
+    setAdminFlag(h);
+    toast('管理人PINを設定した');
+    return true;
+  }
+  if(getAdminFlag() === stored) return true;
+  const pin = await askPin(`管理人PINを入力`, `${ADMIN} 本人確認（この端末は次から省略）`);
+  if(pin===null) return false;
+  const h = await sha('admin:'+pin);
+  if(h !== stored){ toast('管理人PINがちゃうで🚫'); return false; }
+  setAdminFlag(h);
+  return true;
+}
+
 function renderNewTrialForm(){
   const f = document.getElementById('newTrialForm');
   if(!f) return;
@@ -611,7 +672,7 @@ function condText(m){
 }
 function is3way(m){ return m.mode==='3way'; }
 function hasCond(m){ return is3way(m) || (m.condTeam!=null && m.margin!=null); }
-function matchRate(m){ return (m.rate===2000) ? 2000 : 1000; }
+function matchRate(m){ return (m.rate===3000) ? 3000 : (m.rate===2000) ? 2000 : 1000; }
 function peri(n){ return Number(n).toLocaleString()+'ペリカ'; }
 function deadline(m){ return m.kickoff - 15*60*1000; }
 function isLocked(m){ return Date.now() > deadline(m); }
@@ -832,6 +893,58 @@ function championSettle(){
   return {champ, winners, delta, moved};
 }
 
+/* 節ごとの参加率（条件が決まった試合のうち、各自が賭けた割合） */
+function renderParticipation(){
+  const box = document.getElementById('participationPanel');
+  if(!box) return;
+  const players = state.players||[];
+  const all = matchList().filter(m=>hasCond(m) && matchdayOf(m.kickoff));
+  /* 節別に試合をまとめる */
+  const byMd = {};
+  MATCHDAYS.forEach(md=>{ byMd[md.label]=[]; });
+  all.forEach(m=>{ const md=matchdayOf(m.kickoff); if(byMd[md]) byMd[md].push(m); });
+
+  /* 各節の全体参加率（人数ぶんの平均）も出す */
+  const mdStats = MATCHDAYS.map(md=>{
+    const games = byMd[md.label];
+    const totalSlots = games.length * players.length;
+    let joined = 0;
+    games.forEach(m=> players.forEach(p=>{ if(m.picks[p]) joined++; }));
+    const rate = totalSlots ? Math.round(joined/totalSlots*100) : null;
+    return {label:md.label, games:games.length, rate};
+  });
+
+  /* 全体の節別バー */
+  let html = `<div class="part-overall">`;
+  mdStats.forEach(s=>{
+    if(s.games===0){ html += `<div class="part-od"><div class="part-od-l">${s.label}</div><div class="part-od-bar"><span style="width:0%"></span></div><div class="part-od-v">試合なし</div></div>`; return; }
+    const col = s.rate>=80?'#1E6B4F':s.rate>=50?'#C99700':'#C0392B';
+    html += `<div class="part-od">
+      <div class="part-od-l">${s.label}<br><span style="font-size:9px;color:var(--ink-soft)">${s.games}試合</span></div>
+      <div class="part-od-bar"><span style="width:${s.rate}%;background:${col}"></span></div>
+      <div class="part-od-v">${s.rate}%</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  /* 個人別：節ごとの参加率を横並び */
+  html += `<div class="part-head">メンバー別（節ごと）</div>`;
+  players.forEach(p=>{
+    const cells = MATCHDAYS.map(md=>{
+      const games = byMd[md.label];
+      if(!games.length) return `<div class="part-cell"><div class="part-cell-bar"></div><div class="part-cell-v">—</div></div>`;
+      const j = games.filter(m=>m.picks[p]).length;
+      const r = Math.round(j/games.length*100);
+      const col = r>=80?'#1E6B4F':r>=50?'#C99700':'#C0392B';
+      return `<div class="part-cell"><div class="part-cell-bar"><span style="height:${r}%;background:${col}"></span></div><div class="part-cell-v">${r}%</div></div>`;
+    }).join('');
+    html += `<div class="part-row"><div class="part-name">${esc(p)}</div><div class="part-cells">${cells}</div></div>`;
+  });
+  html += `<div class="part-legend">${MATCHDAYS.map(md=>`<span>${md.label}</span>`).join('')}</div>`;
+
+  box.innerHTML = html;
+}
+
 function renderChampion(){
   const box = document.getElementById('championPanel');
   if(!box) return;
@@ -938,6 +1051,7 @@ function render(){
 
   renderTrials();
   renderChampion();
+  renderParticipation();
 
   /* ── 戦績スタッツ：的中率・連勝・逆張り王 ── */
   const players = state.players||[];
@@ -1169,13 +1283,15 @@ function ticket(m, info){
     const chg = (!settled && !locked)
       ? ` <button class="cond-chg" data-cclr="${m.id}">変更</button>` : '';
     const rateTag = `<span class="rate-tag">1試合 ${peri(matchRate(m))}</span>`;
+    const byLine = (m.condBy || m.scoreBy)
+      ? `<br><span class="by-log">${m.condBy?`条件設定：${esc(m.condBy)}`:''}${(m.condBy&&m.scoreBy)?'　/　':''}${m.scoreBy?`記帳：${esc(m.scoreBy)}`:''}</span>` : '';
     if(is3way(m)){
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ハンデなし3択 ${rateTag}${chg}<br>
-        <span class="vs">${esc(shortA)}勝ち / 引き分け / ${esc(shortB)}勝ち から選ぶ。当たった人で山分け</span></div>`;
+        <span class="vs">${esc(shortA)}勝ち / 引き分け / ${esc(shortB)}勝ち から選ぶ。当たった人で山分け</span>${byLine}</div>`;
     } else {
       const oppSide = m.condTeam==='A' ? shortB : shortA;
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ${esc(condText(m))} ${rateTag}${chg}<br>
-        <span class="vs">${esc(m.condTeam==='A'?shortA:shortB)} に賭ける＝条件どおりなら勝ち／${esc(oppSide)} に賭ける＝条件が崩れたら勝ち</span></div>`;
+        <span class="vs">${esc(m.condTeam==='A'?shortA:shortB)} に賭ける＝条件どおりなら勝ち／${esc(oppSide)} に賭ける＝条件が崩れたら勝ち</span>${byLine}</div>`;
     }
   } else if(!locked) {
     condBlock = `<div class="t-cond"><span class="q">賭けの種類を決める</span>
@@ -1187,6 +1303,7 @@ function ticket(m, info){
         <select data-crate="${m.id}">
           <option value="1000">レート 1,000ペリカ</option>
           <option value="2000">レート 2,000ペリカ</option>
+          <option value="3000">レート 3,000ペリカ</option>
         </select>
       </div>
       <div class="cond-set" data-hcrow="${m.id}">
@@ -1374,17 +1491,21 @@ function bind(){
       if(is3way(m)) wName = w==='A'?`${shortA}勝ち`:w==='B'?`${shortB}勝ち`:'引き分け';
       else wName = (w==='A'?shortA:shortB)+' 側の勝ち';
       if(!await ask(`スコア ${shortA} ${a}-${sb} ${shortB} → 賭けは「${wName}」で記帳する？（取消はできへん）`)) return;
-      db.ref(`kakebo/matches/${mid}`).update({ result:w, scoreA:a, scoreB:sb });
+      const by = await whoAmI();
+      if(!by) return;
+      db.ref(`kakebo/matches/${mid}`).update({ result:w, scoreA:a, scoreB:sb, scoreBy:by });
       toast('記帳した');
     };
   });
   document.querySelectorAll('[data-pgo]').forEach(b=>{
-    b.onclick = ()=>{
+    b.onclick = async ()=>{
       const mid = b.dataset.pgo;
       const a = parseInt(document.querySelector(`[data-pa="${mid}"]`).value, 10);
       const sb = parseInt(document.querySelector(`[data-pb="${mid}"]`).value, 10);
       if(isNaN(a) || isNaN(sb) || a<0 || sb<0){ toast('スコアを両方入れてや'); return; }
-      db.ref(`kakebo/matches/${mid}`).update({ scoreA:a, scoreB:sb });
+      const by = await whoAmI();
+      if(!by) return;
+      db.ref(`kakebo/matches/${mid}`).update({ scoreA:a, scoreB:sb, scoreBy:by });
       toast('スコア追記した');
     };
   });
@@ -1412,18 +1533,20 @@ function bind(){
     };
   });
   document.querySelectorAll('[data-cset]').forEach(b=>{
-    b.onclick = ()=>{
+    b.onclick = async ()=>{
       const mid = b.dataset.cset;
+      const setter = await whoAmI();
+      if(!setter) return;
       const mode = document.querySelector(`[data-cmode="${mid}"]`).value;
       const rateEl = document.querySelector(`[data-crate="${mid}"]`);
       const rate = rateEl ? Number(rateEl.value) : 1000;
       if(mode==='3way'){
-        db.ref(`kakebo/matches/${mid}`).update({ mode:'3way', condTeam:null, margin:null, rate });
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'3way', condTeam:null, margin:null, rate, condBy:setter });
         toast(`3択・${peri(rate)}でセット、受付開始や`);
       }else{
         const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
         const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
-        db.ref(`kakebo/matches/${mid}`).update({ mode:'hc', condTeam:ct, margin:mg, rate });
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'hc', condTeam:ct, margin:mg, rate, condBy:setter });
         toast(`条件・${peri(rate)}でセット、受付開始や`);
       }
     };
@@ -1448,6 +1571,7 @@ document.getElementById('addPlayer').onclick = ()=>{
 };
 
 document.getElementById('savePlayers').onclick = async ()=>{
+  if(!await verifyAdmin()){ return; }
   const inputs = document.querySelectorAll('[data-pi]');
   const newNames = [...inputs].map(i=>i.value.trim()).filter(Boolean);
   if(newNames.length < 2){ toast('2人以上は必要や'); return; }
@@ -1463,7 +1587,7 @@ document.getElementById('savePlayers').onclick = async ()=>{
   (state.players||[]).forEach((old,i)=>{ if(newNames[i] && (state.pins||{})[old]) newPins[newNames[i]] = state.pins[old]; });
   updates['kakebo/pins'] = newPins;
   db.ref().update(updates);
-  toast('メンバー更新');
+  toast('メンバー更新（管理人）');
 };
 
 /* ── boot ── */
