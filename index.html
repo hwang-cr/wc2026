@@ -200,6 +200,7 @@
   .verdict-box.innocent{background:#EAF4EE;color:#1E6B4F}
   .verdict-box.void{background:var(--soft);color:var(--ink-soft)}
   .trial-transfers{font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.7}
+  .trial-cancel{width:100%;margin-top:8px;padding:8px;font-size:11px;font-weight:700;color:#C0392B;background:#fff;border:1px solid #F0CFC9;border-radius:5px;cursor:pointer;font-family:'Noto Sans JP',sans-serif}
   .nt-field{margin-bottom:8px}
   .nt-field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:3px;font-weight:700}
   .nt-field input,.nt-field textarea{width:100%;padding:9px 11px;border:1px solid #CFC6AE;border-radius:5px;background:#FBFAF6;color:var(--ink);font-family:inherit;font-size:13px}
@@ -771,7 +772,8 @@ function renderTrials(){
         <button class="vote-btn innocent" data-pv="a" data-t="${t.id}">受理（やろう）</button>
         <button class="vote-btn" style="border-color:var(--ink-soft);color:var(--ink-soft)" data-pv="r" data-t="${t.id}">却下（くだらん）</button>
       </div>
-      <div style="font-size:10px;color:var(--ink-soft);margin-top:6px">※予審は1時間。受理多数で本審（有罪/無罪）に進む。内訳は締切まで非公開。当事者は投票でけへん</div>`;
+      <button class="trial-cancel" data-tcancel="${t.id}">🗑 この起訴を取り消す（起訴人のみ）</button>
+      <div style="font-size:10px;color:var(--ink-soft);margin-top:6px">※予審は1時間。受理多数で本審（有罪/無罪）に進む。内訳は締切まで非公開。当事者は投票でけへん。予審中なら起訴人本人が取り消せる</div>`;
     } else if(ph.phase==='dismissed'){
       cls='';
       const dc = dismissCounts()[t.creator]||0;
@@ -1284,6 +1286,20 @@ function renderPlayersEdit(){
 }
 
 function bind(){
+  /* ── 裁判：起訴の取り消し（予審中・起訴人本人のみ） ── */
+  document.querySelectorAll('[data-tcancel]').forEach(b=>{
+    b.onclick = async ()=>{
+      const t = (state.trials||{})[b.dataset.tcancel];
+      if(!t) return;
+      if(Date.now() > t.preDeadline){ toast('予審が終わってるから取り消せん'); return; }
+      const me = await whoAmI();
+      if(!me) return;
+      if(me !== t.creator){ toast('起訴人本人しか取り消せんで'); return; }
+      if(!await ask(`「${t.title}」の起訴を取り消す？（戻せへん）`)) return;
+      db.ref(`kakebo/trials/${b.dataset.tcancel}`).remove();
+      toast('起訴を取り消した');
+    };
+  });
   /* ── 裁判：予審投票（受理/却下） ── */
   document.querySelectorAll('[data-pv]').forEach(b=>{
     b.onclick = async ()=>{
