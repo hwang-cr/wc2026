@@ -219,6 +219,8 @@
   .verdict-box.void{background:var(--soft);color:var(--ink-soft)}
   .trial-transfers{font-size:11px;color:var(--ink-soft);margin-top:6px;line-height:1.7}
   .trial-cancel{width:100%;margin-top:8px;padding:8px;font-size:11px;font-weight:700;color:#C0392B;background:#fff;border:1px solid #F0CFC9;border-radius:5px;cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+  .trial-void{width:100%;margin-top:8px;padding:8px;font-size:11px;font-weight:700;color:#fff;background:#7A4FA3;border:none;border-radius:5px;cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+  .court-closed-note{font-size:12px;font-weight:700;color:#7A4FA3;background:#F3EEF8;border:1px solid #D9C9E8;border-radius:6px;padding:9px 11px;margin-bottom:10px;line-height:1.5}
   .nt-field{margin-bottom:8px}
   .nt-field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:3px;font-weight:700}
   .nt-field input,.nt-field textarea{width:100%;padding:9px 11px;border:1px solid #CFC6AE;border-radius:5px;background:#FBFAF6;color:var(--ink);font-family:inherit;font-size:13px}
@@ -269,9 +271,11 @@
     <details class="fold" id="foldCourt">
       <summary>⚖️ 裁判所</summary>
       <div class="fold-inner">
+        <div id="courtNotice"></div>
         <div id="trialList"></div>
         <button class="btn-sub" id="newTrialBtn" style="margin-top:10px">＋ 新しい裁判を起こす</button>
         <div id="newTrialForm" style="display:none;margin-top:12px"></div>
+        <button class="btn-sub" id="courtToggleBtn" style="margin-top:12px;font-size:11px;color:var(--ink-soft)">⚙️ 裁判所の開閉（管理人）</button>
       </div>
     </details>
 
@@ -781,6 +785,8 @@ function mainVerdict(t){
 }
 /* 全体フェーズ：pre_voting | dismissed | main_voting | guilty | innocent | void | failed */
 function trialPhase(t){
+  /* 管理人が無効化した裁判はノーゲーム扱い（金は動かん。履歴には残る） */
+  if(t.voided) return {phase:'voided'};
   /* 旧式裁判は予審なし、いきなり本審。締切が無い古いデータは即開票扱い */
   if(t.legacy){
     if(t.deadline == null) t = Object.assign({}, t, {deadline: 0});
@@ -817,16 +823,30 @@ function guiltyCounts(){
 function renderTrials(){
   const box = document.getElementById('trialList');
   if(!box) return;
+  const closed = !!(state.courtClosed);
+  const notice = document.getElementById('courtNotice');
+  const newBtn = document.getElementById('newTrialBtn');
+  if(notice) notice.innerHTML = closed
+    ? `<div class="court-closed-note">🔒 閉廷中。新しい裁判は起こせん。過去の裁判は履歴として下に表示。大会終わったら管理人が開廷できる</div>`
+    : '';
+  if(newBtn) newBtn.style.display = closed ? 'none' : 'block';
+
   const list = trialList().sort((a,b)=>b.created-a.created);
-  if(!list.length){ box.innerHTML = `<div class="empty">まだ裁判は無い。問題発言を見つけたら起訴したれ</div>`; return; }
+  if(!list.length){ box.innerHTML = `<div class="empty">まだ裁判は無い。${closed?'':'問題発言を見つけたら起訴したれ'}</div>`; return; }
   box.innerHTML = list.map(t=>{
-    const ph = trialPhase(t);
+    let ph = trialPhase(t);
+    if(closed && (ph.phase==='pre_voting' || ph.phase==='main_voting')){
+      ph = {phase:'closed_pending'};
+    }
     const plaintiffs = t.plaintiffs.map(esc).join('・');
     const defendants = t.defendants.map(esc).join('・');
     const creator = t.creator ? `<span style="color:var(--ink-soft)">　起訴人：<b>${esc(t.creator)}</b></span>` : '';
     let cls='', statusLine='', body='';
 
-    if(ph.phase==='pre_voting'){
+    if(ph.phase==='closed_pending'){
+      statusLine = `<div class="trial-status" style="color:var(--ink-soft)">閉廷により中断</div>`;
+      body = `<div class="verdict-box void">🔒 閉廷中のため投票停止（履歴のみ）</div>`;
+    } else if(ph.phase==='pre_voting'){
       const remain = fmtRemain(t.preDeadline - Date.now());
       statusLine = `<div class="trial-status">⚖️ 予審：この裁判いるか？・締切まで ${remain}　（${ph.pre.total}人 投票済み）</div>`;
       body = `<div class="vote-btns">
@@ -854,6 +874,9 @@ function renderTrials(){
     } else if(ph.phase==='main_void'){
       statusLine = `<div class="trial-status" style="color:var(--ink-soft)">本審・開票</div>`;
       body = `<div class="verdict-box void">同点（有罪${ph.main.g}・無罪${ph.main.n}）→ 無罪放免（金は動かん）</div>`;
+    } else if(ph.phase==='voided'){
+      statusLine = `<div class="trial-status" style="color:var(--ink-soft)">管理人が無効化</div>`;
+      body = `<div class="verdict-box void">🚫 この裁判は管理人により無効化（精算は取り消し・履歴のみ）</div>`;
     } else { /* guilty / innocent */
       const guilty = ph.phase==='main_guilty';
       cls = guilty?'guilty':'innocent';
@@ -862,7 +885,8 @@ function renderTrials(){
       else { t.plaintiffs.forEach(p=>t.defendants.forEach(d=>transfers.push(`${esc(p)} → ${esc(d)}：${peri(1000)}`))); }
       statusLine = `<div class="trial-status" style="color:var(--ink-soft)">本審・開票（誰が入れたかは非公開）</div>`;
       body = `<div class="verdict-box ${guilty?'guilty':'innocent'}">${guilty?'⚖️ 有罪':'🕊 無罪'}（有罪${ph.main.g}・無罪${ph.main.n}）</div>
-        <div class="trial-transfers">${transfers.join('<br>')}</div>`;
+        <div class="trial-transfers">${transfers.join('<br>')}</div>
+        <button class="trial-void" data-tvoid="${t.id}">🚫 この判決を無効化（管理人のみ）</button>`;
     }
     return `<div class="trial ${cls}">
       <div class="trial-t">⚖️ ${esc(t.title)}</div>
@@ -1403,6 +1427,17 @@ function renderPlayersEdit(){
 }
 
 function bind(){
+  /* ── 裁判：判決の無効化（管理人のみ） ── */
+  document.querySelectorAll('[data-tvoid]').forEach(b=>{
+    b.onclick = async ()=>{
+      const t = (state.trials||{})[b.dataset.tvoid];
+      if(!t) return;
+      if(!await verifyAdmin()) return;
+      if(!await ask(`「${t.title}」の判決を無効化する？\n精算（ペリカの動き）が取り消される。履歴は残る`)) return;
+      db.ref(`kakebo/trials/${b.dataset.tvoid}/voided`).set(true);
+      toast('判決を無効化した（精算取り消し）');
+    };
+  });
   /* ── 裁判：起訴の取り消し（予審中・起訴人本人のみ） ── */
   document.querySelectorAll('[data-tcancel]').forEach(b=>{
     b.onclick = async ()=>{
@@ -1588,6 +1623,15 @@ document.getElementById('savePlayers').onclick = async ()=>{
   updates['kakebo/pins'] = newPins;
   db.ref().update(updates);
   toast('メンバー更新（管理人）');
+};
+
+document.getElementById('courtToggleBtn').onclick = async ()=>{
+  if(!await verifyAdmin()) return;
+  const closed = !!(state.courtClosed);
+  const next = !closed;
+  if(!await ask(next ? '裁判所を閉廷する？\n新しい起訴・投票が止まる（履歴は残る）' : '裁判所を開廷する？\nまた起訴・投票できるようになる')) return;
+  db.ref('kakebo/courtClosed').set(next);
+  toast(next ? '閉廷した🔒' : '開廷した⚖️');
 };
 
 /* ── boot ── */
