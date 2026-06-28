@@ -401,8 +401,8 @@ const ADMIN = 'さんふぁん';   /* 管理人：名前・メンバー編集は
 const MATCHDAYS = [
   {label:'第1節', from:'2026-06-12', to:'2026-06-18'},
   {label:'第2節', from:'2026-06-19', to:'2026-06-24'},
-  {label:'第3節', from:'2026-06-25', to:'2026-06-27'},
-  {label:'トーナメント', from:'2026-06-28', to:'2026-07-19'},
+  {label:'第3節', from:'2026-06-25', to:'2026-06-28'},
+  {label:'トーナメント', from:'2026-06-29', to:'2026-07-21'},
 ];
 /* トーナメントのラウンド（表示の節区切り用。試合データの round フィールドで分類） */
 const ROUNDS = [
@@ -413,7 +413,8 @@ const ROUNDS = [
   {key:'tp',  label:'🥉 3位決定戦'},
   {key:'final',label:'🏆 決勝'},
 ];
-function matchdayOf(ts){
+function matchdayOf(ts, m){
+  if(m && m.round) return 'トーナメント';   /* ノックアウトは日付に関わらずトーナメント */
   const d = new Date(ts + 9*3600000);
   const ymd = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
   for(const md of MATCHDAYS){ if(ymd>=md.from && ymd<=md.to) return md.label; }
@@ -836,7 +837,7 @@ function settle(){
 function matchdaySettle(label){
   const net={}, wins={};
   (state.players||[]).forEach(p=>{ net[p]=0; wins[p]=0; });
-  matchList().filter(m=>m.result && matchdayOf(m.kickoff)===label).forEach(m=>{
+  matchList().filter(m=>m.result && matchdayOf(m.kickoff, m)===label).forEach(m=>{
     const pickers = (state.players||[]).filter(p=>m.picks[p]);
     const winners = pickers.filter(p=>m.picks[p]===m.result);
     const losers  = pickers.filter(p=>m.picks[p]!==m.result);
@@ -1057,11 +1058,11 @@ function renderParticipation(){
   const box = document.getElementById('participationPanel');
   if(!box) return;
   const players = state.players||[];
-  const all = matchList().filter(m=>hasCond(m) && matchdayOf(m.kickoff));
+  const all = matchList().filter(m=>hasCond(m) && matchdayOf(m.kickoff, m));
   /* 節別に試合をまとめる */
   const byMd = {};
   MATCHDAYS.forEach(md=>{ byMd[md.label]=[]; });
-  all.forEach(m=>{ const md=matchdayOf(m.kickoff); if(byMd[md]) byMd[md].push(m); });
+  all.forEach(m=>{ const md=matchdayOf(m.kickoff, m); if(byMd[md]) byMd[md].push(m); });
 
   /* 各節の全体参加率（人数ぶんの平均）も出す */
   const mdStats = MATCHDAYS.map(md=>{
@@ -1287,7 +1288,7 @@ function render(){
     let mvpHtml = '';
     labels.forEach(lb=>{
       const r = matchdaySettle(lb);
-      const played = matchList().some(m=>m.result && matchdayOf(m.kickoff)===lb);
+      const played = matchList().some(m=>m.result && matchdayOf(m.kickoff, m)===lb);
       if(!played){ return; }
       if(r.mvp){
         mvpHtml += `<div class="mvp-row"><span class="mvp-md">${esc(lb)}</span>
@@ -1475,15 +1476,17 @@ function ticket(m, info){
     const byLine = (m.condBy || m.scoreBy)
       ? `<br><span class="by-log">${m.condBy?`条件設定：${esc(m.condBy)}`:''}${(m.condBy&&m.scoreBy)?'　/　':''}${m.scoreBy?`記帳：${esc(m.scoreBy)}`:''}</span>` : '';
     if(is3way(m)){
+      const judgeNote = isKnockout(m) ? '（延長120分まで含めた最終スコアで判定）' : '';
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ハンデなし3択 ${rateTag}${chg}<br>
-        <span class="vs">${esc(shortA)}勝ち / 引き分け / ${esc(shortB)}勝ち から選ぶ。当たった人で山分け</span>${byLine}</div>`;
+        <span class="vs">${esc(shortA)}勝ち / 引き分け / ${esc(shortB)}勝ち から選ぶ。当たった人で山分け${judgeNote}</span>${byLine}</div>`;
     } else if(isAdvance(m)){
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → 勝ち上がり2択（PK込み）${rateTag}${chg}<br>
         <span class="vs">どっちが次に進むか当てる。延長・PK込みの最終結果で判定。当たった人で山分け</span>${byLine}</div>`;
     } else {
       const oppSide = m.condTeam==='A' ? shortB : shortA;
+      const judgeNote = isKnockout(m) ? '（延長120分まで含めた最終スコアで判定）' : '';
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ${esc(condText(m))} ${rateTag}${chg}<br>
-        <span class="vs">${esc(m.condTeam==='A'?shortA:shortB)} に賭ける＝条件どおりなら勝ち／${esc(oppSide)} に賭ける＝条件が崩れたら勝ち</span>${byLine}</div>`;
+        <span class="vs">${esc(m.condTeam==='A'?shortA:shortB)} に賭ける＝条件どおりなら勝ち／${esc(oppSide)} に賭ける＝条件が崩れたら勝ち${judgeNote}</span>${byLine}</div>`;
     }
   } else if(!locked) {
     condBlock = `<div class="t-cond"><span class="q">賭けの種類を決める</span>
@@ -1752,6 +1755,7 @@ function bind(){
       const shortA=m.teamA.split(' ')[0], shortB=m.teamB.split(' ')[0];
 
       let decidedBy, advWinner /* 'A'|'B' 勝ち上がり */, payload={ scoreA:a90, scoreB:b90 };
+      let judgeA=a90, judgeB=b90;  /* タイプ1・2の判定に使うスコア。延長戦なら120分スコア */
 
       if(a90!==b90){
         /* 90分で決着。延長・PKは入力されてても無視（矛盾防止のため警告） */
@@ -1767,6 +1771,7 @@ function bind(){
         if(isNaN(a120)||isNaN(b120)||a120<0||b120<0){ toast('90分同点や。延長120分スコアを入れてや'); return; }
         if(a120<a90||b120<b90){ toast('120分スコアは90分スコア以上のはずやで'); return; }
         payload.score120A=a120; payload.score120B=b120;
+        judgeA=a120; judgeB=b120;   /* タイプ1・2は延長120分スコアで判定 */
         if(a120!==b120){
           decidedBy='延長';
           advWinner = a120>b120?'A':'B';
@@ -1783,10 +1788,10 @@ function bind(){
         }
       }
 
-      /* 賭け判定：タイプ3（勝ち上がり）は最終勝者、それ以外は90分スコア */
+      /* 賭け判定：タイプ3（勝ち上がり）は最終勝者、タイプ1・2は120分まで（延長込み）の最終スコア */
       let result;
       if(isAdvance(m)) result = advWinner;
-      else result = judge(m, a90, b90);
+      else result = judge(m, judgeA, judgeB);
 
       payload.result = result;
       payload.advWinner = advWinner;   /* ブラケット送り用 */
