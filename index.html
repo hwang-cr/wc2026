@@ -47,7 +47,7 @@
   .board-stats{display:flex;margin-top:14px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
   .stat{flex:1;text-align:center;padding:10px 4px;border-right:1px solid var(--line)}
   .stat:last-child{border-right:none}
-  .stat .num{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--green);line-height:1}
+  .stat .num{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .stat .lbl{font-size:10px;color:var(--chalk-dim);margin-top:3px;letter-spacing:.1em}
 
   /* ── upcoming top strip title ── */
@@ -115,6 +115,7 @@
   .empty{text-align:center;color:var(--chalk-dim);font-size:13px;padding:30px 10px;border:1px dashed var(--line);border-radius:8px}
 
   .grp-pill{display:inline-block;margin-left:8px;font-size:10px;font-weight:900;color:var(--amber-deep);border:1px solid var(--amber-deep);border-radius:3px;padding:1px 6px;vertical-align:2px}
+  .grp-pill.ko{color:#7A4FA3;border-color:#7A4FA3;background:#F3EEF8}
   .cond-set{display:flex;gap:6px;margin:6px 0 4px;flex-wrap:wrap}
   .cond-set select{flex:1;min-width:110px;padding:8px;border-radius:4px;border:1px solid #CFC6AE;background:#FBF8EF;color:var(--ink);font-family:inherit;font-size:12px;font-weight:700}
   .cond-go{padding:8px 16px;border:none;border-radius:4px;background:var(--amber);color:var(--felt-dark);font-weight:900;font-size:12px;cursor:pointer;font-family:inherit}
@@ -144,6 +145,12 @@
   .score-in input{width:56px;padding:9px 0;text-align:center;border:1.5px solid #CFC6AE;border-radius:5px;background:#FBF8EF;color:var(--ink);font-family:inherit;font-size:16px;font-weight:900}
   .score-in .sc-team{font-size:13px;font-weight:900}
   .score-in .sc-dash{font-weight:900;color:var(--ink-soft)}
+  .ko-score{margin-top:8px}
+  .ko-step{background:#FBFAF6;border:1px solid var(--card-edge);border-radius:7px;padding:9px;margin-bottom:7px}
+  .ko-step-t{font-size:11px;font-weight:900;color:var(--ink-soft);margin-bottom:6px}
+  .ko-pkwin{display:flex;align-items:center;gap:6px;margin-top:7px}
+  .ko-wbtn{font-size:12px;font-weight:900;padding:6px 12px;border-radius:5px;border:1.5px solid #CFC6AE;background:#fff;color:var(--ink-soft);cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+  .ko-wbtn.on{background:#7A4FA3;border-color:#7A4FA3;color:#fff}
   .sc-go{padding:10px 18px;border:1.5px solid var(--ink);border-radius:5px;background:#fff;color:var(--ink);font-weight:900;font-size:13px;cursor:pointer;font-family:'Noto Sans JP',sans-serif}
   .sc-patch{margin-top:8px}
   .sc-patch input{width:44px;padding:6px 0;font-size:13px}
@@ -185,6 +192,21 @@
   .part-cell-v{font-size:10px;font-weight:900;margin-top:3px}
   .part-legend{display:flex;gap:10px;padding-left:72px}
   .part-legend span{flex:1;text-align:center;font-size:9px;color:var(--ink-soft)}
+  /* MVP */
+  #mvpPanel{margin-bottom:12px}
+  .mvp-row{display:flex;align-items:center;gap:8px;padding:9px 11px;background:linear-gradient(135deg,#FBF7E8,#F5EFD8);border:1px solid #E8DCA8;border-radius:8px;margin-bottom:6px}
+  .mvp-md{font-size:11px;font-weight:900;color:#9A7B00;width:70px}
+  .mvp-name{flex:1;font-size:14px;font-weight:900}
+  .mvp-amt{font-family:'Bebas Neue',sans-serif;font-size:17px}
+  .mvp-amt.plus{color:#1E6B4F}
+  /* ブラケット */
+  .bk-round{margin-bottom:14px}
+  .bk-round-t{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;color:#7A4FA3;margin-bottom:8px;border-bottom:1px solid #E0D4EC;padding-bottom:3px}
+  .bk-game{background:#fff;border:1px solid var(--card-edge);border-radius:8px;padding:8px 10px;margin-bottom:7px}
+  .bk-team{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:2px 0}
+  .bk-team.bk-win{color:#1E6B4F;font-weight:900}
+  .bk-sc{font-family:'Bebas Neue',sans-serif;font-size:16px}
+  .bk-date{font-size:9px;color:var(--ink-soft);margin-top:3px;text-align:right}
   .streak-fire{font-size:10px;font-weight:900;color:#FF8A3D;white-space:nowrap}
   .cmt-show{font-size:12px;font-weight:700;color:var(--ink);background:#EFE8D4;border-radius:5px;padding:7px 10px;margin-top:8px;line-height:1.5}
   .cmt-edit{font-size:10px;color:var(--ink-soft);background:none;border:1px solid #CFC6AE;border-radius:3px;padding:1px 7px;cursor:pointer;font-family:inherit;margin-left:4px}
@@ -249,9 +271,10 @@
     <div class="logo-main">WORLD CUP <span class="gold">2026</span></div>
     <div class="logo-sub">賭けノート</div>
     <div class="logo-host">🇨🇦 CANADA · 🇲🇽 MEXICO · 🇺🇸 USA</div>
-    <span class="stake-tag">1試合 1,000 or 2,000ペリカ</span>
+    <span class="stake-tag">1試合 1,000〜5,000ペリカ</span>
     <div class="board-stats">
       <div class="stat"><div class="num" id="statMatches">0</div><div class="lbl">消化試合</div></div>
+      <div class="stat"><div class="num" id="statRemain">0</div><div class="lbl">残り試合</div></div>
       <div class="stat"><div class="num" id="statMoved">0</div><div class="lbl">動いた金額</div></div>
       <div class="stat"><div class="num" id="statPlayers">0</div><div class="lbl">メンバー</div></div>
     </div>
@@ -281,7 +304,10 @@
 
     <details class="fold" id="foldStats">
       <summary>戦績スタッツ</summary>
-      <div class="fold-inner"><div id="statsPanel"></div></div>
+      <div class="fold-inner">
+        <div id="mvpPanel"></div>
+        <div id="statsPanel"></div>
+      </div>
     </details>
 
     <details class="fold" id="foldParticipation">
@@ -306,6 +332,11 @@
     <details class="fold" id="foldSettled">
       <summary>結果済み</summary>
       <div class="fold-inner"><div id="settledMatches"></div></div>
+    </details>
+
+    <details class="fold" id="foldBracket" style="display:none">
+      <summary>🏆 トーナメント表</summary>
+      <div class="fold-inner"><div id="bracketPanel"></div></div>
     </details>
 
     <details class="fold" id="foldChampion">
@@ -366,18 +397,30 @@ const firebaseConfig = {
 const STAKE = 1000;
 const CHAMPION_STAKE = 10000;
 const ADMIN = 'さんふぁん';   /* 管理人：名前・メンバー編集はこの人の管理人PINが要る */
-/* グループリーグの節（日本時間の日付で判定）。第3節は6/25〜6/27 */
+/* 節（日本時間の日付で判定）。グループは3節、トーナメントは6/28以降まとめて1枠 */
 const MATCHDAYS = [
   {label:'第1節', from:'2026-06-12', to:'2026-06-18'},
   {label:'第2節', from:'2026-06-19', to:'2026-06-24'},
   {label:'第3節', from:'2026-06-25', to:'2026-06-27'},
+  {label:'トーナメント', from:'2026-06-28', to:'2026-07-19'},
+];
+/* トーナメントのラウンド（表示の節区切り用。試合データの round フィールドで分類） */
+const ROUNDS = [
+  {key:'r32', label:'🏆 ラウンド32'},
+  {key:'r16', label:'🏆 ラウンド16'},
+  {key:'qf',  label:'🏆 準々決勝'},
+  {key:'sf',  label:'🏆 準決勝'},
+  {key:'tp',  label:'🥉 3位決定戦'},
+  {key:'final',label:'🏆 決勝'},
 ];
 function matchdayOf(ts){
   const d = new Date(ts + 9*3600000);
   const ymd = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
   for(const md of MATCHDAYS){ if(ymd>=md.from && ymd<=md.to) return md.label; }
-  return null; /* トーナメント等は対象外 */
+  return null;
 }
+function isKnockout(m){ return !!m.round; }
+function roundLabel(key){ const r=ROUNDS.find(x=>x.key===key); return r?r.label.replace(/^[🏆🥉]\s*/,''):key; }
 /* 優勝予想（確定・変更不可）。flag は表示用、country は判定キー */
 const CHAMPION_PICKS = [
   {player:'よんす',   flag:'🇵🇹', country:'ポルトガル'},
@@ -466,6 +509,49 @@ const SCHED = [
   ['K','2026-06-28 08:30','コンゴ民主共和国','ウズベキスタン'],
   ['J','2026-06-28 11:00','アルジェリア','オーストリア'],
   ['J','2026-06-28 11:00','ヨルダン','アルゼンチン']
+];
+
+/* ── トーナメント ──
+   日本時間。round=r32/r16/qf/sf/tp/final。bracketId は枠の識別子。
+   feeds: この試合の勝者が入る次ラウンドの {bracketId, slot('A'|'B')} */
+const KO = [
+  /* ラウンド32（16試合・確定） bracketId B1〜B16 */
+  {id:'k_r32_1',  round:'r32', bid:'B1',  ko:'2026-06-29 04:00', a:'南アフリカ', b:'カナダ',     feed:{bid:'R1',slot:'A'}},
+  {id:'k_r32_2',  round:'r32', bid:'B2',  ko:'2026-06-30 10:00', a:'オランダ',  b:'モロッコ',   feed:{bid:'R1',slot:'B'}},
+  {id:'k_r32_3',  round:'r32', bid:'B3',  ko:'2026-06-30 02:00', a:'ブラジル',  b:'日本',       feed:{bid:'R2',slot:'A'}},
+  {id:'k_r32_4',  round:'r32', bid:'B4',  ko:'2026-07-01 02:00', a:'コートジボワール', b:'ノルウェー', feed:{bid:'R2',slot:'B'}},
+  {id:'k_r32_5',  round:'r32', bid:'B5',  ko:'2026-06-30 05:30', a:'ドイツ',    b:'パラグアイ', feed:{bid:'R3',slot:'A'}},
+  {id:'k_r32_6',  round:'r32', bid:'B6',  ko:'2026-07-01 10:00', a:'メキシコ',  b:'エクアドル', feed:{bid:'R3',slot:'B'}},
+  {id:'k_r32_7',  round:'r32', bid:'B7',  ko:'2026-07-01 06:00', a:'フランス',  b:'スウェーデン', feed:{bid:'R4',slot:'A'}},
+  {id:'k_r32_8',  round:'r32', bid:'B8',  ko:'2026-07-03 12:00', a:'スイス',    b:'アルジェリア', feed:{bid:'R4',slot:'B'}},
+  {id:'k_r32_9',  round:'r32', bid:'B9',  ko:'2026-07-02 01:00', a:'イングランド', b:'コンゴ民主共和国', feed:{bid:'R5',slot:'A'}},
+  {id:'k_r32_10', round:'r32', bid:'B10', ko:'2026-07-03 04:00', a:'スペイン',  b:'オーストリア', feed:{bid:'R5',slot:'B'}},
+  {id:'k_r32_11', round:'r32', bid:'B11', ko:'2026-07-02 05:00', a:'ベルギー',  b:'セネガル',   feed:{bid:'R6',slot:'A'}},
+  {id:'k_r32_12', round:'r32', bid:'B12', ko:'2026-07-04 10:30', a:'コロンビア', b:'ガーナ',     feed:{bid:'R6',slot:'B'}},
+  {id:'k_r32_13', round:'r32', bid:'B13', ko:'2026-07-02 09:00', a:'アメリカ',  b:'ボスニアH',  feed:{bid:'R7',slot:'A'}},
+  {id:'k_r32_14', round:'r32', bid:'B14', ko:'2026-07-03 08:00', a:'ポルトガル', b:'クロアチア', feed:{bid:'R7',slot:'B'}},
+  {id:'k_r32_15', round:'r32', bid:'B15', ko:'2026-07-04 03:00', a:'オーストラリア', b:'エジプト', feed:{bid:'R8',slot:'A'}},
+  {id:'k_r32_16', round:'r32', bid:'B16', ko:'2026-07-04 07:00', a:'アルゼンチン', b:'カーボベルデ', feed:{bid:'R8',slot:'B'}},
+  /* ラウンド16（8試合・空枠） bracketId R1〜R8 */
+  {id:'k_r16_1', round:'r16', bid:'R1', ko:'2026-07-05 02:00', a:null, b:null, feed:{bid:'Q1',slot:'A'}},
+  {id:'k_r16_2', round:'r16', bid:'R2', ko:'2026-07-06 05:00', a:null, b:null, feed:{bid:'Q1',slot:'B'}},
+  {id:'k_r16_3', round:'r16', bid:'R3', ko:'2026-07-05 06:00', a:null, b:null, feed:{bid:'Q2',slot:'A'}},
+  {id:'k_r16_4', round:'r16', bid:'R4', ko:'2026-07-06 09:00', a:null, b:null, feed:{bid:'Q2',slot:'B'}},
+  {id:'k_r16_5', round:'r16', bid:'R5', ko:'2026-07-07 04:00', a:null, b:null, feed:{bid:'Q3',slot:'A'}},
+  {id:'k_r16_6', round:'r16', bid:'R6', ko:'2026-07-07 09:00', a:null, b:null, feed:{bid:'Q3',slot:'B'}},
+  {id:'k_r16_7', round:'r16', bid:'R7', ko:'2026-07-08 03:00', a:null, b:null, feed:{bid:'Q4',slot:'A'}},
+  {id:'k_r16_8', round:'r16', bid:'R8', ko:'2026-07-08 07:00', a:null, b:null, feed:{bid:'Q4',slot:'B'}},
+  /* 準々決勝（4試合・空枠） Q1〜Q4 */
+  {id:'k_qf_1', round:'qf', bid:'Q1', ko:'2026-07-10 04:00', a:null, b:null, feed:{bid:'S1',slot:'A'}},
+  {id:'k_qf_2', round:'qf', bid:'Q2', ko:'2026-07-11 04:00', a:null, b:null, feed:{bid:'S1',slot:'B'}},
+  {id:'k_qf_3', round:'qf', bid:'Q3', ko:'2026-07-12 06:00', a:null, b:null, feed:{bid:'S2',slot:'A'}},
+  {id:'k_qf_4', round:'qf', bid:'Q4', ko:'2026-07-12 10:00', a:null, b:null, feed:{bid:'S2',slot:'B'}},
+  /* 準決勝（2試合・空枠） S1〜S2 */
+  {id:'k_sf_1', round:'sf', bid:'S1', ko:'2026-07-15 04:00', a:null, b:null, feed:{bid:'F1',slot:'A'}, lose:{bid:'TP',slot:'A'}},
+  {id:'k_sf_2', round:'sf', bid:'S2', ko:'2026-07-16 04:00', a:null, b:null, feed:{bid:'F1',slot:'B'}, lose:{bid:'TP',slot:'B'}},
+  /* 3位決定戦・決勝（空枠） */
+  {id:'k_tp', round:'tp', bid:'TP', ko:'2026-07-19 06:00', a:null, b:null},
+  {id:'k_final', round:'final', bid:'F1', ko:'2026-07-20 04:00', a:null, b:null},
 ];
 
 const seedState = () => {
@@ -675,7 +761,8 @@ function condText(m){
   return `${m.margin}点差以上で ${t} 勝ち`;
 }
 function is3way(m){ return m.mode==='3way'; }
-function hasCond(m){ return is3way(m) || (m.condTeam!=null && m.margin!=null); }
+function isAdvance(m){ return m.mode==='adv'; }  /* タイプ3：勝ち上がり2択（PK込み） */
+function hasCond(m){ return is3way(m) || isAdvance(m) || (m.condTeam!=null && m.margin!=null); }
 function matchRate(m){ return [1000,2000,3000,4000,5000].includes(m.rate) ? m.rate : 1000; }
 function peri(n){ return Number(n).toLocaleString()+'ペリカ'; }
 function deadline(m){ return m.kickoff - 15*60*1000; }
@@ -743,6 +830,26 @@ function settle(){
     info[m.id] = { void:false, transfers };
   });
   return { totals, records, moved, info, stats };
+}
+
+/* 節ごとの収支・勝ち数（MVP用）。label は matchdayOf の戻り値 */
+function matchdaySettle(label){
+  const net={}, wins={};
+  (state.players||[]).forEach(p=>{ net[p]=0; wins[p]=0; });
+  matchList().filter(m=>m.result && matchdayOf(m.kickoff)===label).forEach(m=>{
+    const pickers = (state.players||[]).filter(p=>m.picks[p]);
+    const winners = pickers.filter(p=>m.picks[p]===m.result);
+    const losers  = pickers.filter(p=>m.picks[p]!==m.result);
+    if(winners.length===0 || losers.length===0) return; /* ノーゲーム */
+    const rate = matchRate(m);
+    losers.forEach(l=>{ net[l] -= winners.length*rate; });
+    winners.forEach(w=>{ net[w] += losers.length*rate; wins[w]++; });
+  });
+  /* MVP = 一番稼いだ人（プラス収支の最大）。全員0以下や同点は該当者扱いを呼び出し側で */
+  let mvp=null, best=-Infinity;
+  (state.players||[]).forEach(p=>{ if(net[p]>best){ best=net[p]; mvp=p; } });
+  const winners = best>0 ? (state.players||[]).filter(p=>net[p]===best) : [];
+  return { net, wins, mvp: winners.length===1?winners[0]:null, mvpAmt: best, tie: winners.length>1?winners:null };
 }
 
 /* ── 裁判所ロジック ── */
@@ -917,6 +1024,34 @@ function championSettle(){
   return {champ, winners, delta, moved};
 }
 
+/* トーナメント表（ブラケット）。knockout 試合を round ごとに縦に並べる簡易版 */
+function renderBracket(){
+  const fold = document.getElementById('foldBracket');
+  const box = document.getElementById('bracketPanel');
+  if(!box || !fold) return;
+  const kos = matchList().filter(m=>m.round).sort((a,b)=>a.kickoff-b.kickoff);
+  if(!kos.length){ fold.style.display='none'; return; }
+  fold.style.display='block';
+  let html='';
+  ROUNDS.forEach(r=>{
+    const games = kos.filter(m=>m.round===r.key);
+    if(!games.length) return;
+    html += `<div class="bk-round"><div class="bk-round-t">${r.label}</div>`;
+    games.forEach(m=>{
+      const done = m.scoreA!=null && m.scoreB!=null;
+      const aw = done && m.scoreA>m.scoreB, bw = done && m.scoreB>m.scoreA;
+      /* 90分判定。トーナメントは延長PKで決着するが、賭けは90分。表示は90分スコア＋(PK)注記が要れば手動 */
+      html += `<div class="bk-game">
+        <div class="bk-team ${aw?'bk-win':''}">${esc(m.teamA)}<span class="bk-sc">${done?m.scoreA:'-'}</span></div>
+        <div class="bk-team ${bw?'bk-win':''}">${esc(m.teamB)}<span class="bk-sc">${done?m.scoreB:'-'}</span></div>
+        <div class="bk-date">${fmtDate(m.kickoff).replace(' 日本時間','')}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  box.innerHTML = html;
+}
+
 /* 節ごとの参加率（条件が決まった試合のうち、各自が賭けた割合） */
 function renderParticipation(){
   const box = document.getElementById('participationPanel');
@@ -1056,6 +1191,8 @@ function render(){
   });
 
   document.getElementById('statMatches').textContent = all.filter(m=>m.result).length;
+  const remainEl = document.getElementById('statRemain');
+  if(remainEl) remainEl.textContent = all.filter(m=>!m.result).length;
   document.getElementById('statMoved').textContent = peri(moved+trialMoved+champMoved);
   document.getElementById('statPlayers').textContent = (state.players||[]).length;
 
@@ -1076,6 +1213,7 @@ function render(){
   renderTrials();
   renderChampion();
   renderParticipation();
+  renderBracket();
 
   /* ── 戦績スタッツ：的中率・連勝・逆張り王 ── */
   const players = state.players||[];
@@ -1142,6 +1280,31 @@ function render(){
   document.getElementById('statsPanel').innerHTML = statsHtml ||
     `<div class="empty">結果が入ったら戦績が出るで</div>`;
 
+  /* 🏆 節ごとMVP（一番稼いだ人） */
+  const mvpBox = document.getElementById('mvpPanel');
+  if(mvpBox){
+    const labels = MATCHDAYS.map(md=>md.label);
+    let mvpHtml = '';
+    labels.forEach(lb=>{
+      const r = matchdaySettle(lb);
+      const played = matchList().some(m=>m.result && matchdayOf(m.kickoff)===lb);
+      if(!played){ return; }
+      if(r.mvp){
+        mvpHtml += `<div class="mvp-row"><span class="mvp-md">${esc(lb)}</span>
+          <span class="mvp-name">🏆 ${esc(r.mvp)}</span>
+          <span class="mvp-amt plus">+${peri(r.mvpAmt)}</span></div>`;
+      } else if(r.tie){
+        mvpHtml += `<div class="mvp-row"><span class="mvp-md">${esc(lb)}</span>
+          <span class="mvp-name">🏆 ${r.tie.map(esc).join('・')}</span>
+          <span class="mvp-amt plus">+${peri(r.mvpAmt)}</span></div>`;
+      } else {
+        mvpHtml += `<div class="mvp-row"><span class="mvp-md">${esc(lb)}</span>
+          <span class="mvp-name" style="color:var(--ink-soft)">該当者なし（全員マイナス or ノーゲーム）</span><span></span></div>`;
+      }
+    });
+    mvpBox.innerHTML = mvpHtml || `<div class="empty">節の結果が出たらMVPが出るで</div>`;
+  }
+
   const groups = {};
   all.forEach(m=>{
     if(!m.grp || m.grp.length!==1) return;
@@ -1188,14 +1351,16 @@ function render(){
   document.getElementById('scheduleMatches').innerHTML =
     later.length ? later.map(m=>{
       const t = ticket(m, info);
-      return `<details class="future"><summary>${fmtDate(m.kickoff).replace(' 日本時間','')}　${esc(m.teamA)} vs ${esc(m.teamB)}<span class="grp-pill">${esc(m.grp||'')}組</span></summary>${t}</details>`;
+      const tag = m.round ? `<span class="grp-pill ko">${esc(roundLabel(m.round))}</span>` : `<span class="grp-pill">${esc(m.grp||'')}組</span>`;
+      return `<details class="future"><summary>${fmtDate(m.kickoff).replace(' 日本時間','')}　${esc(m.teamA)} vs ${esc(m.teamB)}${tag}</summary>${t}</details>`;
     }).join('') : `<div class="empty">予定試合なし</div>`;
 
   document.getElementById('settledMatches').innerHTML =
     done.length ? done.map(m=>{
       const t = ticket(m, info);
       const sc = (m.scoreA!=null&&m.scoreB!=null) ? `${m.scoreA}-${m.scoreB}` : '結果済';
-      return `<details class="future"><summary>${esc(m.teamA.split(' ')[0])} ${sc} ${esc(m.teamB.split(' ')[0])}<span class="grp-pill">${esc(m.grp||'')}組</span></summary>${t}</details>`;
+      const tag = m.round ? `<span class="grp-pill ko">${esc(roundLabel(m.round))}</span>` : `<span class="grp-pill">${esc(m.grp||'')}組</span>`;
+      return `<details class="future"><summary>${esc(m.teamA.split(' ')[0])} ${sc} ${esc(m.teamB.split(' ')[0])}${tag}</summary>${t}</details>`;
     }).join('') : `<div class="empty">まだ結果なし</div>`;
 
   renderPlayersEdit();
@@ -1312,6 +1477,9 @@ function ticket(m, info){
     if(is3way(m)){
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ハンデなし3択 ${rateTag}${chg}<br>
         <span class="vs">${esc(shortA)}勝ち / 引き分け / ${esc(shortB)}勝ち から選ぶ。当たった人で山分け</span>${byLine}</div>`;
+    } else if(isAdvance(m)){
+      condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → 勝ち上がり2択（PK込み）${rateTag}${chg}<br>
+        <span class="vs">どっちが次に進むか当てる。延長・PK込みの最終結果で判定。当たった人で山分け</span>${byLine}</div>`;
     } else {
       const oppSide = m.condTeam==='A' ? shortB : shortA;
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ${esc(condText(m))} ${rateTag}${chg}<br>
@@ -1323,6 +1491,7 @@ function ticket(m, info){
         <select data-cmode="${m.id}">
           <option value="hc">ハンデ付き2択</option>
           <option value="3way">ハンデなし3択（勝ち/分け/負け）</option>
+          ${isKnockout(m)?`<option value="adv">勝ち上がり2択（PK込み・どっちが進む）</option>`:''}
         </select>
         <select data-crate="${m.id}">
           <option value="1000">レート 1,000ペリカ</option>
@@ -1355,9 +1524,15 @@ function ticket(m, info){
   if(settled){
     const i = info[m.id]||{void:true,transfers:[]};
     const hasScore = (m.scoreA!=null && m.scoreB!=null);
-    const scoreTxt = hasScore ? `${m.scoreA}-${m.scoreB}　` : '';
+    let scoreTxt = hasScore ? `${m.scoreA}-${m.scoreB}` : '';
+    if(hasScore && m.decidedBy && m.decidedBy!=='90分'){
+      if(m.decidedBy==='延長' && m.score120A!=null) scoreTxt += `（延長 ${m.score120A}-${m.score120B}）`;
+      else if(m.decidedBy==='PK' && m.pkA!=null) scoreTxt += `（延長 ${m.score120A}-${m.score120B}・PK ${m.pkA}-${m.pkB}）`;
+    }
+    if(scoreTxt) scoreTxt += '　';
     let resLabel;
     if(is3way(m)) resLabel = m.result==='A' ? `${shortA}勝ち` : m.result==='B' ? `${shortB}勝ち` : '引き分け';
+    else if(isAdvance(m)) resLabel = `${m.result==='A'?shortA:shortB} 勝ち上がり`;
     else resLabel = `${m.result==='A'?shortA:shortB} 側の勝ち`;
     const tag = i.void
       ? `<span class="settled-tag void">${scoreTxt}ノーゲーム（対抗なし）</span>`
@@ -1375,6 +1550,47 @@ function ticket(m, info){
       ${tr}${patch}${cmt}
     </div>`;
   } else if(kicked(m) && condSet){
+    if(isKnockout(m)){
+      foot = `<div class="res-label">結果入力（トーナメント）：まず90分スコア。同点なら延長120分→それも同点ならPK</div>
+        <div class="ko-score">
+          <div class="ko-step">
+            <div class="ko-step-t">① 90分スコア（必須）</div>
+            <div class="score-in">
+              <span class="sc-team">${esc(shortA)}</span>
+              <input type="number" min="0" inputmode="numeric" data-ka90="${m.id}">
+              <span class="sc-dash">−</span>
+              <input type="number" min="0" inputmode="numeric" data-kb90="${m.id}">
+              <span class="sc-team">${esc(shortB)}</span>
+            </div>
+          </div>
+          <div class="ko-step">
+            <div class="ko-step-t">② 90分同点やった場合だけ：延長120分スコア</div>
+            <div class="score-in">
+              <span class="sc-team">${esc(shortA)}</span>
+              <input type="number" min="0" inputmode="numeric" data-ka120="${m.id}">
+              <span class="sc-dash">−</span>
+              <input type="number" min="0" inputmode="numeric" data-kb120="${m.id}">
+              <span class="sc-team">${esc(shortB)}</span>
+            </div>
+          </div>
+          <div class="ko-step">
+            <div class="ko-step-t">③ 120分も同点やった場合だけ：PKスコア＋勝者</div>
+            <div class="score-in">
+              <span class="sc-team">${esc(shortA)}</span>
+              <input type="number" min="0" inputmode="numeric" data-kapk="${m.id}">
+              <span class="sc-dash">−</span>
+              <input type="number" min="0" inputmode="numeric" data-kbpk="${m.id}">
+              <span class="sc-team">${esc(shortB)}</span>
+            </div>
+            <div class="ko-pkwin">
+              <span style="font-size:11px;color:var(--ink-soft)">PK勝者：</span>
+              <button class="ko-wbtn" data-kwin="A" data-m="${m.id}">${esc(shortA)}</button>
+              <button class="ko-wbtn" data-kwin="B" data-m="${m.id}">${esc(shortB)}</button>
+            </div>
+          </div>
+          <button class="sc-go" data-kgo="${m.id}" style="width:100%;margin-top:8px">この内容で記帳する</button>
+        </div>`;
+    } else {
     foot = `<div class="res-label">結果入力：スコアを入れたら勝敗は自動判定や</div>
       <div class="score-in">
         <span class="sc-team">${esc(shortA)}</span>
@@ -1384,6 +1600,7 @@ function ticket(m, info){
         <span class="sc-team">${esc(shortB)}</span>
         <button class="sc-go" data-sgo="${m.id}">確定</button>
       </div>`;
+    }
   } else if(condSet){
     foot = `<div class="waiting">キックオフ後にここで結果入力できる</div>`;
   } else {
@@ -1393,7 +1610,7 @@ function ticket(m, info){
   return `<div class="ticket">
     <div class="t-head">
       <div>
-        <div class="t-match">${esc(m.teamA)} vs ${esc(m.teamB)}<span class="grp-pill">${esc(m.grp||'')}組</span></div>
+        <div class="t-match">${esc(m.teamA)} vs ${esc(m.teamB)}<span class="grp-pill${m.round?' ko':''}">${m.round?esc(roundLabel(m.round)):esc(m.grp||'')+'組'}</span></div>
         <div class="t-date">${fmtDate(m.kickoff)}</div>
       </div>
       ${dl}
@@ -1514,6 +1731,100 @@ function bind(){
     const condHolds = (mg===0) ? (tScore >= oScore) : (tScore - oScore >= mg);
     return condHolds ? m.condTeam : (condIsA ? 'B' : 'A');
   }
+  /* ── トーナメント記帳：PK勝者ボタン選択 ── */
+  document.querySelectorAll('[data-kwin]').forEach(b=>{
+    b.onclick = ()=>{
+      const mid=b.dataset.m;
+      document.querySelectorAll(`[data-kwin][data-m="${mid}"]`).forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      b.parentElement.dataset.pkwin = b.dataset.kwin;
+    };
+  });
+  /* ── トーナメント記帳：確定 ── */
+  document.querySelectorAll('[data-kgo]').forEach(btn=>{
+    btn.onclick = async ()=>{
+      const mid = btn.dataset.kgo;
+      const m = (state.matches||{})[mid];
+      if(!m) return;
+      const num = sel=>{ const el=document.querySelector(`[data-${sel}="${mid}"]`); const v=el?parseInt(el.value,10):NaN; return v; };
+      const a90=num('ka90'), b90=num('kb90');
+      if(isNaN(a90)||isNaN(b90)||a90<0||b90<0){ toast('90分スコアを入れてや'); return; }
+      const shortA=m.teamA.split(' ')[0], shortB=m.teamB.split(' ')[0];
+
+      let decidedBy, advWinner /* 'A'|'B' 勝ち上がり */, payload={ scoreA:a90, scoreB:b90 };
+
+      if(a90!==b90){
+        /* 90分で決着。延長・PKは入力されてても無視（矛盾防止のため警告） */
+        const a120=num('ka120'), b120=num('kb120'), apk=num('kapk'), bpk=num('kbpk');
+        if(!isNaN(a120)||!isNaN(b120)||!isNaN(apk)||!isNaN(bpk)){
+          if(!await ask('90分で差がついてるから、延長・PKは無視されるで。ええか？')) return;
+        }
+        decidedBy='90分';
+        advWinner = a90>b90?'A':'B';
+      } else {
+        /* 90分同点 → 延長120分が要る */
+        const a120=num('ka120'), b120=num('kb120');
+        if(isNaN(a120)||isNaN(b120)||a120<0||b120<0){ toast('90分同点や。延長120分スコアを入れてや'); return; }
+        if(a120<a90||b120<b90){ toast('120分スコアは90分スコア以上のはずやで'); return; }
+        payload.score120A=a120; payload.score120B=b120;
+        if(a120!==b120){
+          decidedBy='延長';
+          advWinner = a120>b120?'A':'B';
+        } else {
+          /* 120分も同点 → PK */
+          const apk=num('kapk'), bpk=num('kbpk');
+          const pkwin = (document.querySelector(`[data-kgo="${mid}"]`).closest('.ko-score').querySelector('.ko-pkwin')||{}).dataset?.pkwin;
+          if(isNaN(apk)||isNaN(bpk)||apk<0||bpk<0){ toast('120分も同点や。PKスコアを入れてや'); return; }
+          if(!pkwin){ toast('PKの勝者を選んでや'); return; }
+          if((pkwin==='A'&&apk<=bpk)||(pkwin==='B'&&bpk<=apk)){ toast('PKスコアと勝者が合うてへんで'); return; }
+          payload.pkA=apk; payload.pkB=bpk; payload.pkWin=pkwin;
+          decidedBy='PK';
+          advWinner = pkwin;
+        }
+      }
+
+      /* 賭け判定：タイプ3（勝ち上がり）は最終勝者、それ以外は90分スコア */
+      let result;
+      if(isAdvance(m)) result = advWinner;
+      else result = judge(m, a90, b90);
+
+      payload.result = result;
+      payload.advWinner = advWinner;   /* ブラケット送り用 */
+      payload.decidedBy = decidedBy;
+
+      let wName;
+      if(is3way(m)) wName = result==='A'?`${shortA}勝ち`:result==='B'?`${shortB}勝ち`:'引き分け';
+      else if(isAdvance(m)) wName = (result==='A'?shortA:shortB)+' 勝ち上がり';
+      else wName = (result==='A'?shortA:shortB)+' 側の勝ち';
+
+      const advName = advWinner==='A'?shortA:shortB;
+      if(!await ask(`記帳内容：\n90分 ${a90}-${b90}（${decidedBy}決着）\n勝ち上がり：${advName}\n賭け判定：${wName}\nこれで記帳する？（取消できへん）`)) return;
+      const by = await whoAmI();
+      if(!by) return;
+      payload.scoreBy = by;
+      db.ref(`kakebo/matches/${mid}`).update(payload);
+
+      /* ブラケット送り：勝者を次ラウンドの枠にセット */
+      if(m.feed && m.feed.bid){
+        const target = matchList().find(x=>x.bid===m.feed.bid);
+        if(target){
+          const teamField = m.feed.slot==='A' ? 'teamA' : 'teamB';
+          const advTeam = advWinner==='A'?m.teamA:m.teamB;
+          db.ref(`kakebo/matches/${target.id}`).update({ [teamField]: advTeam });
+        }
+      }
+      /* 準決勝の敗者は3位決定戦へ */
+      if(m.lose && m.lose.bid){
+        const target = matchList().find(x=>x.bid===m.lose.bid);
+        if(target){
+          const teamField = m.lose.slot==='A' ? 'teamA' : 'teamB';
+          const loseTeam = advWinner==='A'?m.teamB:m.teamA;
+          db.ref(`kakebo/matches/${target.id}`).update({ [teamField]: loseTeam });
+        }
+      }
+      toast('記帳した（勝者を次へ送ったで）');
+    };
+  });
   document.querySelectorAll('[data-sgo]').forEach(b=>{
     b.onclick = async ()=>{
       const mid = b.dataset.sgo;
@@ -1566,7 +1877,7 @@ function bind(){
     sel.onchange = ()=>{
       const mid = sel.dataset.cmode;
       const row = document.querySelector(`[data-hcrow="${mid}"]`);
-      if(row) row.style.display = sel.value==='3way' ? 'none' : 'flex';
+      if(row) row.style.display = (sel.value==='3way'||sel.value==='adv') ? 'none' : 'flex';
     };
   });
   document.querySelectorAll('[data-cset]').forEach(b=>{
@@ -1580,6 +1891,9 @@ function bind(){
       if(mode==='3way'){
         db.ref(`kakebo/matches/${mid}`).update({ mode:'3way', condTeam:null, margin:null, rate, condBy:setter });
         toast(`3択・${peri(rate)}でセット、受付開始や`);
+      }else if(mode==='adv'){
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'adv', condTeam:null, margin:null, rate, condBy:setter });
+        toast(`勝ち上がり2択・${peri(rate)}でセット、受付開始や`);
       }else{
         const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
         const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
@@ -1650,6 +1964,7 @@ document.getElementById('courtToggleBtn').onclick = async ()=>{
     return;
   }
   let seeded = false;
+  let koMigrated = false;
   db.ref('kakebo').on('value', snap=>{
     const v = snap.val();
     if(v === null){
@@ -1657,6 +1972,26 @@ document.getElementById('courtToggleBtn').onclick = async ()=>{
       return;
     }
     state = v;
+    /* トーナメント試合をまだ入れてなければ注入。既にあれば時刻だけ最新に補正（1回だけ） */
+    if(!koMigrated && state.matches){
+      koMigrated = true;
+      const updates = {};
+      KO.forEach(k=>{
+        const ex = state.matches[k.id];
+        if(!ex){
+          updates[`kakebo/matches/${k.id}`] = {
+            round:k.round, bid:k.bid,
+            teamA: k.a?tn(k.a):'🛡 未定', teamB: k.b?tn(k.b):'🛡 未定',
+            kickoff: jst(k.ko), picks:{},
+            feed: k.feed||null, lose: k.lose||null
+          };
+        } else if(ex.kickoff !== jst(k.ko)){
+          /* 既存試合の時刻を最新の正確な時刻に補正 */
+          updates[`kakebo/matches/${k.id}/kickoff`] = jst(k.ko);
+        }
+      });
+      if(Object.keys(updates).length){ db.ref().update(updates); return; }
+    }
     document.getElementById('loading').style.display='none';
     document.getElementById('app').style.display='block';
     const ae = document.activeElement;
