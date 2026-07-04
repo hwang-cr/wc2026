@@ -350,6 +350,7 @@
         <div class="players-edit" id="playersEdit"></div>
         <button class="btn-sub" id="addPlayer">＋ メンバー追加</button>
         <button class="btn-main" id="savePlayers">名前を保存（管理人のみ）</button>
+        <button class="btn-sub" id="rebuildBracketBtn" style="margin-top:8px;font-size:12px;color:#7A4FA3;border-color:#7A4FA3">🔄 トーナメント表を組み直す（管理人）</button>
         <p class="note" style="margin-top:8px">
           🔒 名前・メンバーの変更は<b>管理人（さんふぁん）専用PIN</b>が要る。なりすまし・収支すり替え防止や。<br>
           ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに1,000ペリカ</b>払う（例：1人外して2人的中 → 外した人は2,000ペリカ払い）。全員同じ選択 or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
@@ -1971,6 +1972,69 @@ document.getElementById('courtToggleBtn').onclick = async ()=>{
   toast(next ? '閉廷した🔒' : '開廷した⚖️');
 };
 
+document.getElementById('rebuildBracketBtn').onclick = async ()=>{
+  if(!await verifyAdmin()) return;
+  if(!await ask('トーナメント表を組み直す？\n記帳済みの勝者を正しい枠に配置し直す（賭け・結果はそのまま）')) return;
+
+  const UNDEC = '🛡 未定';
+  const ms = state.matches||{};
+  /* bid → match id の対応 */
+  const byBid = {};
+  Object.keys(ms).forEach(id=>{ const m=ms[id]; if(m.bid) byBid[m.bid]=id; });
+
+  /* KO配列の feed 定義を使う（コードが正） */
+  const feedDef = {};
+  KO.forEach(k=>{ feedDef[k.bid] = {feed:k.feed||null, lose:k.lose||null}; });
+
+  const updates = {};
+  /* 1) まず R16以降（r32以外）の team を全部「未定」にリセット */
+  KO.forEach(k=>{
+    if(k.round==='r32') return;
+    const id = byBid[k.bid]; if(!id) return;
+    updates[`kakebo/matches/${id}/teamA`] = UNDEC;
+    updates[`kakebo/matches/${id}/teamB`] = UNDEC;
+  });
+
+  /* 2) 各ラウンド順に、記帳済み試合の勝者を次枠へ配置 */
+  const roundOrder = ['r32','r16','qf','sf'];
+  /* リセットを反映した作業用コピー */
+  const work = {};
+  Object.keys(ms).forEach(id=>{ work[id] = Object.assign({}, ms[id]); });
+  KO.forEach(k=>{ if(k.round!=='r32'){ const id=byBid[k.bid]; if(id){ work[id].teamA=UNDEC; work[id].teamB=UNDEC; } } });
+
+  roundOrder.forEach(rd=>{
+    KO.filter(k=>k.round===rd).forEach(k=>{
+      const id = byBid[k.bid]; if(!id) return;
+      const m = work[id];
+      let aw = (m.advWinner==='A'||m.advWinner==='B') ? m.advWinner
+             : ((m.result==='A'||m.result==='B') ? m.result : null);
+      if(!aw) return; /* まだ勝者未記帳 */
+      const winTeam  = aw==='A' ? m.teamA : m.teamB;
+      const loseTeam = aw==='A' ? m.teamB : m.teamA;
+      const def = feedDef[k.bid]||{};
+      if(def.feed && def.feed.bid){
+        const tid = byBid[def.feed.bid];
+        if(tid){
+          const f = def.feed.slot==='A'?'teamA':'teamB';
+          updates[`kakebo/matches/${tid}/${f}`] = winTeam;
+          work[tid][f] = winTeam;
+        }
+      }
+      if(def.lose && def.lose.bid){
+        const tid = byBid[def.lose.bid];
+        if(tid){
+          const f = def.lose.slot==='A'?'teamA':'teamB';
+          updates[`kakebo/matches/${tid}/${f}`] = loseTeam;
+          work[tid][f] = loseTeam;
+        }
+      }
+    });
+  });
+
+  db.ref().update(updates);
+  toast('トーナメント表を組み直した🔄');
+};
+
 /* ── boot ── */
 (function init(){
   if(!firebaseConfig.apiKey){
@@ -1993,7 +2057,7 @@ document.getElementById('courtToggleBtn').onclick = async ()=>{
       return;
     }
     state = v;
-    /* トーナメント試合をまだ入れてなければ注入。既にあれば時刻だけ最新に補正（1回だけ） */
+    /* トーナメント試合の初期投入（存在しないものだけ追加。既存の kickoff/feed は上書きしない） */
     if(!koMigrated && state.matches){
       koMigrated = true;
       const updates = {};
@@ -2006,13 +2070,8 @@ document.getElementById('courtToggleBtn').onclick = async ()=>{
             kickoff: jst(k.ko), picks:{},
             feed: k.feed||null, lose: k.lose||null
           };
-        } else if(ex.kickoff !== jst(k.ko) || JSON.stringify(ex.feed||null)!==JSON.stringify(k.feed||null) || JSON.stringify(ex.lose||null)!==JSON.stringify(k.lose||null)){
-          /* 既存試合の時刻・ブラケット送り先を最新の正確なものに補正 */
-          updates[`kakebo/matches/${k.id}/kickoff`] = jst(k.ko);
-          updates[`kakebo/matches/${k.id}/feed`] = k.feed||null;
-          updates[`kakebo/matches/${k.id}/lose`] = k.lose||null;
-          updates[`kakebo/matches/${k.id}/bid`] = k.bid;
         }
+        /* 既存試合には触らない：管理人がFirebaseで手動修正した kickoff/feed/lose を尊重する */
       });
       if(Object.keys(updates).length){ db.ref().update(updates); return; }
     }
