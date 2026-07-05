@@ -96,6 +96,9 @@
   .p-btn.on-B{background:#1F5276;border-color:#1F5276;color:#fff}
   .p-btn.p3{width:62px;font-size:11px;padding:6px 1px}
   .p-btn.on-D{background:#8A6D2F;border-color:#8A6D2F;color:#fff}
+  .p-btn.pmd{width:auto;flex:1;min-width:54px;font-size:10.5px;padding:6px 2px}
+  .p-btn.on-M{background:var(--amber-deep);border-color:var(--amber-deep);color:#fff}
+  .pick-row.mdr{flex-wrap:wrap}
   .p-btn:disabled{opacity:.85;cursor:default}
   .p-mark{width:22px;text-align:center;font-size:14px;font-weight:900}
   .mk-win{color:var(--win)} .mk-lose{color:var(--lose)}
@@ -764,7 +767,19 @@ function condText(m){
 }
 function is3way(m){ return m.mode==='3way'; }
 function isAdvance(m){ return m.mode==='adv'; }  /* タイプ3：勝ち上がり2択（PK込み） */
-function hasCond(m){ return is3way(m) || isAdvance(m) || (m.condTeam!=null && m.margin!=null); }
+function isMd(m){ return m.mode==='md'; }        /* タイプ4：点差多択（120分基準・PK除く） */
+function mdSteps(m){ const n = Number(m.steps); return (n>=3 && n<=5) ? n : 3; }
+/* 点差多択の選択肢ラベル。key='1'..'N'。①=相手の同点以上、中間=ちょうどk-1点差、最後=N-1点差以上 */
+function mdChoiceLabel(m, key, long){
+  const n = mdSteps(m);
+  const F = (m.condTeam==='A' ? m.teamA : m.teamB).split(' ')[0];
+  const O = (m.condTeam==='A' ? m.teamB : m.teamA).split(' ')[0];
+  const k = Number(key);
+  if(k===1) return long ? `${O} 同点以上` : `${O}同点+`;
+  if(k===n) return long ? `${F} ${n-1}点差以上勝ち` : `${F}${n-1}点差+`;
+  return long ? `${F} ${k-1}点差ちょうど勝ち` : `${F}${k-1}点差`;
+}
+function hasCond(m){ return is3way(m) || isAdvance(m) || (isMd(m) && m.condTeam!=null) || (m.condTeam!=null && m.margin!=null); }
 /* ラウンドごとのレート上限。グループは5000、以降ラウンドが上がるごとに+1000、決勝10000 */
 function maxRateFor(m){
   switch(m && m.round){
@@ -1423,6 +1438,20 @@ function ticket(m, info){
       const onA = (showPick && pick==='A') ? (threeWay?'on-A':'on-A') : '';
       const onD = (showPick && pick==='D') ? 'on-D' : '';
       const onB = (showPick && pick==='B') ? 'on-B' : '';
+      if(isMd(m)){
+        const n = mdSteps(m);
+        let btns = '';
+        for(let k=1;k<=n;k++){
+          const key = String(k);
+          const on = (showPick && pick===key) ? 'on-M' : '';
+          btns += `<button class="p-btn pmd ${on}" data-side="${key}" data-m="${m.id}" data-p="${esc(p)}" ${dis}>${esc(mdChoiceLabel(m,k))}</button>`;
+        }
+        return `<div class="pick-row mdr">
+          <div class="p-name">${esc(p)}</div>
+          ${btns}
+          ${mark}
+        </div>`;
+      }
       if(threeWay){
         return `<div class="pick-row">
           <div class="p-name">${esc(p)}</div>
@@ -1453,7 +1482,20 @@ function ticket(m, info){
     if(revealed2){
       /* 締切後：人気メーターを全公開 */
       let meter;
-      if(threeWay2){
+      if(isMd(m)){
+        const n = mdSteps(m);
+        const cntm = {}; let tv = 0;
+        allP.forEach(p=>{ const v=m.picks[p]; if(v){ cntm[v]=(cntm[v]||0)+1; tv++; } });
+        tv = tv || 1;
+        const colors = ['var(--win)','#8A6D2F','#1F5276','#6B4FA0','#B0533A'];
+        let spans='', lbls='';
+        for(let k=1;k<=n;k++){
+          const c = cntm[String(k)]||0;
+          spans += `<span style="width:${c/tv*100}%;background:${colors[(k-1)%5]}"></span>`;
+          lbls  += `<span>${esc(mdChoiceLabel(m,k))} ${c}</span>`;
+        }
+        meter = `<div class="meter"><div class="meter-bar">${spans}</div><div class="meter-lbl">${lbls}</div></div>`;
+      } else if(threeWay2){
         meter = `<div class="meter">
           <div class="meter-bar">
             <span style="width:${cnt.A/totalV*100}%;background:var(--win)"></span>
@@ -1503,6 +1545,14 @@ function ticket(m, info){
     } else if(isAdvance(m)){
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → 勝ち上がり2択（PK込み）${rateTag}${chg}<br>
         <span class="vs">どっちが次に進むか当てる。延長・PK込みの最終結果で判定。当たった人で山分け</span>${byLine}</div>`;
+    } else if(isMd(m)){
+      const n = mdSteps(m);
+      const marks = '①②③④⑤';
+      const opts = [];
+      for(let k=1;k<=n;k++) opts.push(marks[k-1]+' '+mdChoiceLabel(m,k,true));
+      const judgeNote = isKnockout(m) ? '（延長120分まで含めた最終スコアで判定・PKは点差に入れへん）' : '';
+      condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → 点差${n}択 ${rateTag}${chg}<br>
+        <span class="vs">${opts.map(esc).join(' / ')} から選ぶ。当たった人で山分け${judgeNote}</span>${byLine}</div>`;
     } else {
       const oppSide = m.condTeam==='A' ? shortB : shortA;
       const judgeNote = isKnockout(m) ? '（延長120分まで含めた最終スコアで判定）' : '';
@@ -1516,6 +1566,7 @@ function ticket(m, info){
           <option value="hc">ハンデ付き2択</option>
           <option value="3way">ハンデなし3択（勝ち/分け/負け）</option>
           ${isKnockout(m)?`<option value="adv">勝ち上がり2択（PK込み・どっちが進む）</option>`:''}
+          <option value="md">点差多択（同点+/1点差/2点差…）</option>
         </select>
         <select data-crate="${m.id}">
           ${rateOptionsFor(m).map(r=>`<option value="${r}">レート ${r.toLocaleString()}ペリカ</option>`).join('')}
@@ -1532,6 +1583,17 @@ function ticket(m, info){
           <option value="2">2点差以上で勝ち</option>
           <option value="3">3点差以上で勝ち</option>
           <option value="4">4点差以上で勝ち</option>
+        </select>
+      </div>
+      <div class="cond-set" data-mdrow="${m.id}" style="display:none">
+        <select data-mteam="${m.id}">
+          <option value="A">${esc(shortA)} が有利（点差側）</option>
+          <option value="B">${esc(shortB)} が有利（点差側）</option>
+        </select>
+        <select data-msteps="${m.id}">
+          <option value="3">3択（同点+ / 1点差 / 2点差+）</option>
+          <option value="4">4択（同点+ / 1 / 2 / 3点差+）</option>
+          <option value="5">5択（同点+ / 1 / 2 / 3 / 4点差+）</option>
         </select>
       </div>
       <div class="cond-set"><button class="cond-go" data-cset="${m.id}">確定</button></div>
@@ -1553,6 +1615,7 @@ function ticket(m, info){
     let resLabel;
     if(is3way(m)) resLabel = m.result==='A' ? `${shortA}勝ち` : m.result==='B' ? `${shortB}勝ち` : '引き分け';
     else if(isAdvance(m)) resLabel = `${m.result==='A'?shortA:shortB} 勝ち上がり`;
+    else if(isMd(m)) resLabel = mdChoiceLabel(m, m.result, true);
     else resLabel = `${m.result==='A'?shortA:shortB} 側の勝ち`;
     const tag = i.void
       ? `<span class="settled-tag void">${scoreTxt}ノーゲーム（対抗なし）</span>`
@@ -1744,6 +1807,14 @@ function bind(){
       if(a<b) return 'B';
       return 'D';
     }
+    if(isMd(m)){
+      /* 点差多択：120分スコアの点差で判定。①=有利側が勝てず（同点含む相手側）、中間=ちょうど、最後=以上 */
+      const n = mdSteps(m);
+      const diff = (m.condTeam==='A') ? (a-b) : (b-a);
+      if(diff<=0) return '1';
+      if(diff>=n-1) return String(n);
+      return String(diff+1);
+    }
     const condIsA = m.condTeam==='A';
     const tScore = condIsA ? a : b;
     const oScore = condIsA ? b : a;
@@ -1817,6 +1888,7 @@ function bind(){
       let wName;
       if(is3way(m)) wName = result==='A'?`${shortA}勝ち`:result==='B'?`${shortB}勝ち`:'引き分け';
       else if(isAdvance(m)) wName = (result==='A'?shortA:shortB)+' 勝ち上がり';
+      else if(isMd(m)) wName = mdChoiceLabel(m, result, true);
       else wName = (result==='A'?shortA:shortB)+' 側の勝ち';
 
       const advName = advWinner==='A'?shortA:shortB;
@@ -1859,6 +1931,7 @@ function bind(){
       const shortA = m.teamA.split(' ')[0], shortB = m.teamB.split(' ')[0];
       let wName;
       if(is3way(m)) wName = w==='A'?`${shortA}勝ち`:w==='B'?`${shortB}勝ち`:'引き分け';
+      else if(isMd(m)) wName = mdChoiceLabel(m, w, true);
       else wName = (w==='A'?shortA:shortB)+' 側の勝ち';
       if(!await ask(`スコア ${shortA} ${a}-${sb} ${shortB} → 賭けは「${wName}」で記帳する？（取消はできへん）`)) return;
       const by = await whoAmI();
@@ -1899,7 +1972,9 @@ function bind(){
     sel.onchange = ()=>{
       const mid = sel.dataset.cmode;
       const row = document.querySelector(`[data-hcrow="${mid}"]`);
-      if(row) row.style.display = (sel.value==='3way'||sel.value==='adv') ? 'none' : 'flex';
+      const mrow = document.querySelector(`[data-mdrow="${mid}"]`);
+      if(row) row.style.display = (sel.value==='hc') ? 'flex' : 'none';
+      if(mrow) mrow.style.display = (sel.value==='md') ? 'flex' : 'none';
     };
   });
   document.querySelectorAll('[data-cset]').forEach(b=>{
@@ -1916,6 +1991,11 @@ function bind(){
       }else if(mode==='adv'){
         db.ref(`kakebo/matches/${mid}`).update({ mode:'adv', condTeam:null, margin:null, rate, condBy:setter });
         toast(`勝ち上がり2択・${peri(rate)}でセット、受付開始や`);
+      }else if(mode==='md'){
+        const ct = document.querySelector(`[data-mteam="${mid}"]`).value;
+        const st = Number(document.querySelector(`[data-msteps="${mid}"]`).value);
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'md', condTeam:ct, margin:null, steps:st, rate, condBy:setter });
+        toast(`点差${st}択・${peri(rate)}でセット、受付開始や`);
       }else{
         const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
         const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
@@ -1927,7 +2007,7 @@ function bind(){
   document.querySelectorAll('[data-cclr]').forEach(b=>{
     b.onclick = async ()=>{
       if(!await ask('条件を変更すると全員の選択もリセットされる。ええか？')) return;
-      db.ref(`kakebo/matches/${b.dataset.cclr}`).update({ mode:null, condTeam:null, margin:null, rate:null, picks:null });
+      db.ref(`kakebo/matches/${b.dataset.cclr}`).update({ mode:null, condTeam:null, margin:null, steps:null, rate:null, picks:null });
     };
   });
 }
