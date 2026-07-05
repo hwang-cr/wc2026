@@ -1,1 +1,1 @@
-wc2026 group betting note　
+wc2026 group betting note　　
