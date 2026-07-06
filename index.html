@@ -303,15 +303,18 @@
     <div class="up-head">⚡ 本日の試合</div>
     <div id="todayMatches"></div>
 
-    <details class="fold" id="foldCourt">
-      <summary>⚖️ 裁判所</summary>
+    <details class="fold" id="foldStandings">
+      <summary>順位表</summary>
       <div class="fold-inner">
-        <div id="courtNotice"></div>
-        <div id="trialList"></div>
-        <button class="btn-sub" id="newTrialBtn" style="margin-top:10px">＋ 新しい裁判を起こす</button>
-        <div id="newTrialForm" style="display:none;margin-top:12px"></div>
-        <button class="btn-sub" id="courtToggleBtn" style="margin-top:12px;font-size:11px;color:var(--ink-soft)">⚙️ 裁判所の開閉（管理人）</button>
+        <div class="standings" id="standings"></div>
+        <div style="height:14px"></div>
+        <div id="groupTables"></div>
       </div>
+    </details>
+
+    <details class="fold" id="foldTrend">
+      <summary>📈 順位・収支の推移</summary>
+      <div class="fold-inner"><div id="trendPanel"></div></div>
     </details>
 
     <details class="fold" id="foldStats">
@@ -322,23 +325,9 @@
       </div>
     </details>
 
-    <details class="fold" id="foldTrend">
-      <summary>📈 順位・収支の推移</summary>
-      <div class="fold-inner"><div id="trendPanel"></div></div>
-    </details>
-
     <details class="fold" id="foldParticipation">
       <summary>📊 参加率（節ごと）</summary>
       <div class="fold-inner"><div id="participationPanel"></div></div>
-    </details>
-
-    <details class="fold" id="foldStandings">
-      <summary>順位表</summary>
-      <div class="fold-inner">
-        <div class="standings" id="standings"></div>
-        <div style="height:14px"></div>
-        <div id="groupTables"></div>
-      </div>
     </details>
 
     <details class="fold" id="foldSchedule">
@@ -359,6 +348,17 @@
     <details class="fold" id="foldChampion">
       <summary>🏆 優勝予想</summary>
       <div class="fold-inner"><div id="championPanel"></div></div>
+    </details>
+
+    <details class="fold" id="foldCourt">
+      <summary>⚖️ 裁判所</summary>
+      <div class="fold-inner">
+        <div id="courtNotice"></div>
+        <div id="trialList"></div>
+        <button class="btn-sub" id="newTrialBtn" style="margin-top:10px">＋ 新しい裁判を起こす</button>
+        <div id="newTrialForm" style="display:none;margin-top:12px"></div>
+        <button class="btn-sub" id="courtToggleBtn" style="margin-top:12px;font-size:11px;color:var(--ink-soft)">⚙️ 裁判所の開閉（管理人）</button>
+      </div>
     </details>
 
     <details class="fold" id="foldMembers">
@@ -1109,7 +1109,7 @@ function renderBracket(){
    金の増減は settle() と同じく全員（不参加者含む）で計算するので順位表と数字が一致する。
    ただしグラフに線を描くのは「実際に賭けた参加者」だけ＝がんひょんは自動で除外。 */
 const TREND_COLORS = ['#1E6B4F','#1F5276','#C0392B','#8A6D2F','#7A4FA3','#3A7CA5','#B0533A'];
-const TREND_EXCLUDE = ['がんひょん'];   /* 不参加。念のため明示除外 */
+const HIDDEN_PLAYERS = ['がんひょん'];   /* 不参加メンバー。推移グラフ・参加率から除外 */
 
 function trendData(){
   const allPlayers = state.players||[];
@@ -1129,7 +1129,7 @@ function trendData(){
   });
   const betters = new Set();
   settledMatches.forEach(m=>Object.keys(m.picks||{}).forEach(p=>{ if(allPlayers.includes(p)) betters.add(p); }));
-  const plot = allPlayers.filter(p=>betters.has(p) && !TREND_EXCLUDE.includes(p));
+  const plot = allPlayers.filter(p=>betters.has(p) && !HIDDEN_PLAYERS.includes(p));
   return { plot, snaps };
 }
 /* あるスナップ時点の順位（参加者内・同点は同順位） */
@@ -1231,7 +1231,7 @@ function renderTrend(){
 function renderParticipation(){
   const box = document.getElementById('participationPanel');
   if(!box) return;
-  const players = state.players||[];
+  const players = (state.players||[]).filter(p=>!HIDDEN_PLAYERS.includes(p));
   const all = matchList().filter(m=>hasCond(m) && matchdayOf(m.kickoff, m));
   /* 節別に試合をまとめる */
   const byMd = {};
