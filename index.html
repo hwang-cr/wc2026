@@ -195,6 +195,15 @@
   .part-cell-v{font-size:10px;font-weight:900;margin-top:3px}
   .part-legend{display:flex;gap:10px;padding-left:72px}
   .part-legend span{flex:1;text-align:center;font-size:9px;color:var(--ink-soft)}
+  /* 順位・収支の推移 */
+  .trend-sub{font-size:11px;font-weight:900;color:var(--ink-soft);margin:6px 0 6px}
+  .trend-chart{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 6px 2px;margin-bottom:8px}
+  .trend-chart svg{display:block;width:100%;height:auto}
+  .trend-legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:4px 2px 2px}
+  .trend-lg{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ink)}
+  .trend-sw{width:12px;height:12px;border-radius:3px;flex:none}
+  .trend-lg .v{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.02em}
+  .trend-note{font-size:11px;color:var(--chalk-dim);line-height:1.7;margin-top:8px}
   /* MVP */
   #mvpPanel{margin-bottom:12px}
   .mvp-row{display:flex;align-items:center;gap:8px;padding:9px 11px;background:linear-gradient(135deg,#FBF7E8,#F5EFD8);border:1px solid #E8DCA8;border-radius:8px;margin-bottom:6px}
@@ -311,6 +320,11 @@
         <div id="mvpPanel"></div>
         <div id="statsPanel"></div>
       </div>
+    </details>
+
+    <details class="fold" id="foldTrend">
+      <summary>📈 順位・収支の推移</summary>
+      <div class="fold-inner"><div id="trendPanel"></div></div>
     </details>
 
     <details class="fold" id="foldParticipation">
@@ -1089,6 +1103,130 @@ function renderBracket(){
   box.innerHTML = html;
 }
 
+/* ── 順位・収支の推移 ──
+   既存の state を読むだけ。Firebaseへの書き込み・新規読み込みは一切なし。
+   結果が入った試合をキックオフ順に精算し直し、各試合後の累計収支をスナップショットする。
+   金の増減は settle() と同じく全員（不参加者含む）で計算するので順位表と数字が一致する。
+   ただしグラフに線を描くのは「実際に賭けた参加者」だけ＝がんひょんは自動で除外。 */
+const TREND_COLORS = ['#1E6B4F','#1F5276','#C0392B','#8A6D2F','#7A4FA3','#3A7CA5','#B0533A'];
+const TREND_EXCLUDE = ['がんひょん'];   /* 不参加。念のため明示除外 */
+
+function trendData(){
+  const allPlayers = state.players||[];
+  const settledMatches = matchList().filter(m=>m.result).sort((a,b)=>a.kickoff-b.kickoff);
+  const running = {}; allPlayers.forEach(p=>running[p]=0);
+  const snaps = [];
+  settledMatches.forEach(m=>{
+    const pickers = allPlayers.filter(p=>m.picks[p]);
+    const winners = pickers.filter(p=>m.picks[p]===m.result);
+    const losers  = pickers.filter(p=>m.picks[p]!==m.result);
+    if(winners.length && losers.length){        /* ノーゲームは金動かん＝前回と同値のスナップ */
+      const rate = matchRate(m);
+      losers.forEach(l=>{ running[l] -= winners.length*rate; });
+      winners.forEach(w=>{ running[w] += losers.length*rate; });
+    }
+    snaps.push({ kickoff:m.kickoff, md:matchdayOf(m.kickoff, m), totals:Object.assign({},running) });
+  });
+  const betters = new Set();
+  settledMatches.forEach(m=>Object.keys(m.picks||{}).forEach(p=>{ if(allPlayers.includes(p)) betters.add(p); }));
+  const plot = allPlayers.filter(p=>betters.has(p) && !TREND_EXCLUDE.includes(p));
+  return { plot, snaps };
+}
+/* あるスナップ時点の順位（参加者内・同点は同順位） */
+function rankSnap(totals, plot){
+  const s = [...plot].sort((a,b)=>totals[b]-totals[a]);
+  const r = {}; let i=0;
+  while(i<s.length){ let j=i; while(j+1<s.length && totals[s[j+1]]===totals[s[i]]) j++;
+    for(let k=i;k<=j;k++) r[s[k]]=i+1; i=j+1; }
+  return r;
+}
+function mdShort(md){ return ({'第1節':'1節','第2節':'2節','第3節':'3節','トーナメント':'決勝T'})[md] || md || ''; }
+function xBoundaries(snaps){
+  const b=[]; let prev=null;
+  snaps.forEach((s,i)=>{ if(s.md!==prev){ b.push({i, md:s.md}); prev=s.md; } });
+  return b;
+}
+function moneyChartSVG(plot, snaps, colorOf){
+  const n=snaps.length;
+  const W=360,H=156,L=50,R=10,T=12,B=22, iw=W-L-R, ih=H-T-B;
+  let mn=0,mx=0;
+  snaps.forEach(s=>plot.forEach(p=>{ mn=Math.min(mn,s.totals[p]); mx=Math.max(mx,s.totals[p]); }));
+  if(mn===mx){ mn-=2000; mx+=2000; }
+  const pad=(mx-mn)*0.12; mn-=pad; mx+=pad;
+  const xAt=i=> n<=1 ? L+iw/2 : L+(i/(n-1))*iw;
+  const yAt=v=> T+(1-(v-mn)/((mx-mn)||1))*ih;
+  const yfmt=v=>{ const r=Math.round(v/1000)*1000; return (r>0?'+':'')+r.toLocaleString(); };
+  let g='';
+  if(mn<0 && mx>0){
+    const zy=yAt(0).toFixed(1);
+    g+=`<line x1="${L}" y1="${zy}" x2="${W-R}" y2="${zy}" stroke="#C9C6BC" stroke-width="1" stroke-dasharray="3 3"/>`;
+    g+=`<text x="${L-5}" y="${(+zy+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#7C8288">0</text>`;
+  }
+  g+=`<text x="${L-5}" y="${(yAt(mx-pad)+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#7C8288">${yfmt(mx-pad)}</text>`;
+  g+=`<text x="${L-5}" y="${(yAt(mn+pad)+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#7C8288">${yfmt(mn+pad)}</text>`;
+  xBoundaries(snaps).forEach(b=>{
+    const x=xAt(b.i).toFixed(1);
+    if(b.i>0) g+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ih}" stroke="#EDEBE3" stroke-width="1"/>`;
+    g+=`<text x="${x}" y="${H-6}" text-anchor="${b.i===0?'start':'middle'}" font-size="9" fill="#7C8288">${esc(mdShort(b.md))}</text>`;
+  });
+  plot.forEach(p=>{
+    const pts=snaps.map((s,i)=>`${xAt(i).toFixed(1)},${yAt(s.totals[p]).toFixed(1)}`).join(' ');
+    g+=`<polyline points="${pts}" fill="none" stroke="${colorOf(p)}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" opacity="0.92"/>`;
+    g+=`<circle cx="${xAt(n-1).toFixed(1)}" cy="${yAt(snaps[n-1].totals[p]).toFixed(1)}" r="2.4" fill="${colorOf(p)}"/>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="累計収支の推移">${g}</svg>`;
+}
+function bumpChartSVG(plot, snaps, colorOf){
+  const n=snaps.length, K=plot.length;
+  const W=360, rowH=20, T=14, B=22, L=40, R=10;
+  const ih=(K>1?(K-1):1)*rowH, H=T+ih+B, iw=W-L-R;
+  const xAt=i=> n<=1 ? L+iw/2 : L+(i/(n-1))*iw;
+  const yAt=rank=> T+((rank-1)/((K-1)||1))*ih;
+  let g='';
+  for(let rk=1; rk<=K; rk++){
+    const y=yAt(rk).toFixed(1);
+    g+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#F0EEE6" stroke-width="1"/>`;
+    g+=`<text x="${L-6}" y="${(+y+3).toFixed(1)}" text-anchor="end" font-size="9" fill="#7C8288">${rk}位</text>`;
+  }
+  xBoundaries(snaps).forEach(b=>{
+    const x=xAt(b.i).toFixed(1);
+    if(b.i>0) g+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ih}" stroke="#EDEBE3" stroke-width="1"/>`;
+    g+=`<text x="${x}" y="${H-6}" text-anchor="${b.i===0?'start':'middle'}" font-size="9" fill="#7C8288">${esc(mdShort(b.md))}</text>`;
+  });
+  const ranks=snaps.map(s=>rankSnap(s.totals, plot));
+  plot.forEach(p=>{
+    const pts=snaps.map((s,i)=>`${xAt(i).toFixed(1)},${yAt(ranks[i][p]).toFixed(1)}`).join(' ');
+    g+=`<polyline points="${pts}" fill="none" stroke="${colorOf(p)}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" opacity="0.92"/>`;
+    g+=`<circle cx="${xAt(n-1).toFixed(1)}" cy="${yAt(ranks[n-1][p]).toFixed(1)}" r="3" fill="${colorOf(p)}"/>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="順位の変動">${g}</svg>`;
+}
+function renderTrend(){
+  const box = document.getElementById('trendPanel');
+  if(!box) return;
+  const { plot, snaps } = trendData();
+  if(!plot.length || !snaps.length){
+    box.innerHTML = `<div class="empty">結果が入った試合が増えたら、順位と収支の推移グラフが出るで</div>`;
+    return;
+  }
+  const colorMap={}; plot.forEach((p,i)=>colorMap[p]=TREND_COLORS[i%TREND_COLORS.length]);
+  const colorOf=p=>colorMap[p];
+  const last=snaps[snaps.length-1].totals;
+  const legend=`<div class="trend-legend">`+plot.map(p=>{
+    const v=last[p], cls=v>0?'yen-plus':v<0?'yen-minus':'yen-zero';
+    return `<div class="trend-lg"><span class="trend-sw" style="background:${colorMap[p]}"></span>${esc(p)} <span class="v ${cls}">${v>0?'+':''}${v.toLocaleString()}</span></div>`;
+  }).join('')+`</div>`;
+  const fewNote = snaps.length<2 ? `<div class="trend-note">※まだ${snaps.length}試合分。試合が増えるほど推移がハッキリ出るで</div>` : '';
+  box.innerHTML =
+    `<div class="trend-sub">📈 順位の変動（上が1位・${snaps.length}試合分）</div>
+     <div class="trend-chart">${bumpChartSVG(plot,snaps,colorOf)}</div>
+     <div class="trend-sub">💰 累計収支の推移（右端が現在）</div>
+     <div class="trend-chart">${moneyChartSVG(plot,snaps,colorOf)}</div>
+     ${legend}
+     ${fewNote}
+     <div class="trend-note">※がんひょんは不参加やから線に出てへん。順位は参加者内での順位や。集計は試合の賭けのみで、裁判・優勝予想の増減は含まん（順位表の金額とは差が出ることがある）。</div>`;
+}
+
 /* 節ごとの参加率（条件が決まった試合のうち、各自が賭けた割合） */
 function renderParticipation(){
   const box = document.getElementById('participationPanel');
@@ -1250,6 +1388,7 @@ function render(){
   renderTrials();
   renderChampion();
   renderParticipation();
+  renderTrend();
   renderBracket();
 
   /* ── 戦績スタッツ：的中率・連勝・逆張り王 ── */
@@ -1539,7 +1678,7 @@ function ticket(m, info){
     const byLine = (m.condBy || m.scoreBy)
       ? `<br><span class="by-log">${m.condBy?`条件設定：${esc(m.condBy)}`:''}${(m.condBy&&m.scoreBy)?'　/　':''}${m.scoreBy?`記帳：${esc(m.scoreBy)}`:''}</span>` : '';
     if(is3way(m)){
-      const judgeNote = isKnockout(m) ? '（延長120分まで含めた最終スコアで判定）' : '';
+      const judgeNote = isKnockout(m) ? (m.judgeBasis==='90' ? '（90分のみで判定・延長なし）' : '（延長120分まで含めた最終スコアで判定）') : '';
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ハンデなし3択 ${rateTag}${chg}<br>
         <span class="vs">${esc(shortA)}勝ち / 引き分け / ${esc(shortB)}勝ち から選ぶ。当たった人で山分け${judgeNote}</span>${byLine}</div>`;
     } else if(isAdvance(m)){
@@ -1555,7 +1694,7 @@ function ticket(m, info){
         <span class="vs">${opts.map(esc).join(' / ')} から選ぶ。当たった人で山分け${judgeNote}</span>${byLine}</div>`;
     } else {
       const oppSide = m.condTeam==='A' ? shortB : shortA;
-      const judgeNote = isKnockout(m) ? '（延長120分まで含めた最終スコアで判定）' : '';
+      const judgeNote = isKnockout(m) ? (m.judgeBasis==='90' ? '（90分のみで判定・延長なし）' : '（延長120分まで含めた最終スコアで判定）') : '';
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → ${esc(condText(m))} ${rateTag}${chg}<br>
         <span class="vs">${esc(m.condTeam==='A'?shortA:shortB)} に賭ける＝条件どおりなら勝ち／${esc(oppSide)} に賭ける＝条件が崩れたら勝ち${judgeNote}</span>${byLine}</div>`;
     }
@@ -1572,6 +1711,12 @@ function ticket(m, info){
           ${rateOptionsFor(m).map(r=>`<option value="${r}">レート ${r.toLocaleString()}ペリカ</option>`).join('')}
         </select>
       </div>
+      ${isKnockout(m)?`<div class="cond-set" data-jbrow="${m.id}">
+        <select data-cjbasis="${m.id}">
+          <option value="120">判定：延長120分込み（従来）</option>
+          <option value="90">判定：90分のみ（延長なし）</option>
+        </select>
+      </div>`:''}
       <div class="cond-set" data-hcrow="${m.id}">
         <select data-cteam="${m.id}">
           <option value="A">${esc(shortA)}</option>
@@ -1876,10 +2021,20 @@ function bind(){
         }
       }
 
-      /* 賭け判定：タイプ3（勝ち上がり）は最終勝者、タイプ1・2は120分まで（延長込み）の最終スコア */
+      /* 賭け判定：
+         タイプ3（勝ち上がり)は最終勝者
+         点差多択(md)は120分基準（従来どおり）
+         ハンデ2択・3択は judgeBasis で切替：'90'=90分スコアのみ／それ以外=延長120分込み（既定・従来動作） */
       let result;
-      if(isAdvance(m)) result = advWinner;
-      else result = judge(m, judgeA, judgeB);
+      if(isAdvance(m)){
+        result = advWinner;
+      } else if(isMd(m)){
+        result = judge(m, judgeA, judgeB);
+      } else if(m.judgeBasis === '90'){
+        result = judge(m, a90, b90);
+      } else {
+        result = judge(m, judgeA, judgeB);
+      }
 
       payload.result = result;
       payload.advWinner = advWinner;   /* ブラケット送り用 */
@@ -1892,7 +2047,8 @@ function bind(){
       else wName = (result==='A'?shortA:shortB)+' 側の勝ち';
 
       const advName = advWinner==='A'?shortA:shortB;
-      if(!await ask(`記帳内容：\n90分 ${a90}-${b90}（${decidedBy}決着）\n勝ち上がり：${advName}\n賭け判定：${wName}\nこれで記帳する？（取消できへん）`)) return;
+      const basisNote = (!isAdvance(m) && !isMd(m)) ? `\n判定基準：${m.judgeBasis==='90'?'90分のみ':'延長120分込み'}` : '';
+      if(!await ask(`記帳内容：\n90分 ${a90}-${b90}（${decidedBy}決着）\n勝ち上がり：${advName}\n賭け判定：${wName}${basisNote}\nこれで記帳する？（取消できへん）`)) return;
       const by = await whoAmI();
       if(!by) return;
       payload.scoreBy = by;
@@ -1973,8 +2129,13 @@ function bind(){
       const mid = sel.dataset.cmode;
       const row = document.querySelector(`[data-hcrow="${mid}"]`);
       const mrow = document.querySelector(`[data-mdrow="${mid}"]`);
+      const jbrow = document.querySelector(`[data-jbrow="${mid}"]`);
+      const jbsel = document.querySelector(`[data-cjbasis="${mid}"]`);
       if(row) row.style.display = (sel.value==='hc') ? 'flex' : 'none';
       if(mrow) mrow.style.display = (sel.value==='md') ? 'flex' : 'none';
+      /* 判定基準はハンデ2択・3択だけ有効。3択は90分を既定に、ハンデは120分を既定に寄せとく */
+      if(jbrow) jbrow.style.display = (sel.value==='hc' || sel.value==='3way') ? 'flex' : 'none';
+      if(jbsel) jbsel.value = (sel.value==='3way') ? '90' : '120';
     };
   });
   document.querySelectorAll('[data-cset]').forEach(b=>{
@@ -1985,9 +2146,11 @@ function bind(){
       const mode = document.querySelector(`[data-cmode="${mid}"]`).value;
       const rateEl = document.querySelector(`[data-crate="${mid}"]`);
       const rate = rateEl ? Number(rateEl.value) : 1000;
+      const jbEl = document.querySelector(`[data-cjbasis="${mid}"]`);
+      const judgeBasis = jbEl ? jbEl.value : '120';   /* グループ戦は延長無いので実質無関係 */
       if(mode==='3way'){
-        db.ref(`kakebo/matches/${mid}`).update({ mode:'3way', condTeam:null, margin:null, rate, condBy:setter });
-        toast(`3択・${peri(rate)}でセット、受付開始や`);
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'3way', condTeam:null, margin:null, rate, judgeBasis, condBy:setter });
+        toast(`3択・${peri(rate)}・${judgeBasis==='90'?'90分判定':'120分判定'}でセット、受付開始や`);
       }else if(mode==='adv'){
         db.ref(`kakebo/matches/${mid}`).update({ mode:'adv', condTeam:null, margin:null, rate, condBy:setter });
         toast(`勝ち上がり2択・${peri(rate)}でセット、受付開始や`);
@@ -1999,15 +2162,15 @@ function bind(){
       }else{
         const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
         const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
-        db.ref(`kakebo/matches/${mid}`).update({ mode:'hc', condTeam:ct, margin:mg, rate, condBy:setter });
-        toast(`条件・${peri(rate)}でセット、受付開始や`);
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'hc', condTeam:ct, margin:mg, rate, judgeBasis, condBy:setter });
+        toast(`条件・${peri(rate)}・${judgeBasis==='90'?'90分判定':'120分判定'}でセット、受付開始や`);
       }
     };
   });
   document.querySelectorAll('[data-cclr]').forEach(b=>{
     b.onclick = async ()=>{
       if(!await ask('条件を変更すると全員の選択もリセットされる。ええか？')) return;
-      db.ref(`kakebo/matches/${b.dataset.cclr}`).update({ mode:null, condTeam:null, margin:null, steps:null, rate:null, picks:null });
+      db.ref(`kakebo/matches/${b.dataset.cclr}`).update({ mode:null, condTeam:null, margin:null, steps:null, rate:null, judgeBasis:null, picks:null });
     };
   });
 }
