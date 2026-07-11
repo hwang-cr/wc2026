@@ -211,6 +211,20 @@
   .mvp-name{flex:1;font-size:14px;font-weight:900}
   .mvp-amt{font-family:'Bebas Neue',sans-serif;font-size:17px}
   .mvp-amt.plus{color:#1E6B4F}
+  /* 精算 */
+  .settle-note{font-size:12px;font-weight:700;color:var(--ink-soft);background:var(--soft-bg);border:1px solid var(--line);border-radius:6px;padding:9px 11px;margin-bottom:10px;line-height:1.6}
+  .settle-net{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px;background:#fff}
+  .settle-net-row{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px dashed var(--line);font-size:13px}
+  .settle-net-row:last-child{border-bottom:none}
+  .settle-net-nm{flex:1;font-weight:700}
+  .settle-net-v{font-family:'Bebas Neue',sans-serif;font-size:17px;min-width:84px;text-align:right}
+  .settle-head{font-size:11px;font-weight:900;color:var(--ink-soft);letter-spacing:.08em;margin:4px 0 8px}
+  .settle-pay{display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#F3EEF8,#EEF2EE);border:1px solid var(--line);border-radius:8px;margin-bottom:7px}
+  .settle-from{font-weight:900;font-size:14px}
+  .settle-arrow{color:var(--amber-deep);font-weight:900}
+  .settle-to{font-weight:900;font-size:14px}
+  .settle-amt{margin-left:auto;font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amber-deep)}
+  .settle-done{text-align:center;font-size:13px;font-weight:700;color:#1E6B4F;background:#EAF4EE;border:1px solid #BfE0CC;border-radius:8px;padding:14px 10px}
   /* ブラケット */
   .bk-round{margin-bottom:14px}
   .bk-round-t{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;color:#7A4FA3;margin-bottom:8px;border-bottom:1px solid #E0D4EC;padding-bottom:3px}
@@ -359,6 +373,11 @@
         <div id="newTrialForm" style="display:none;margin-top:12px"></div>
         <button class="btn-sub" id="courtToggleBtn" style="margin-top:12px;font-size:11px;color:var(--ink-soft)">⚙️ 裁判所の開閉（管理人）</button>
       </div>
+    </details>
+
+    <details class="fold" id="foldSettlement">
+      <summary>💸 精算（誰が誰に払う）</summary>
+      <div class="fold-inner"><div id="settlementPanel"></div></div>
     </details>
 
     <details class="fold" id="foldMembers">
@@ -1317,6 +1336,73 @@ function fmtRemain(ms){
   return h>0 ? `${h}時間${mn}分` : `${mn}分`;
 }
 
+/* 精算：最終収支(totals)から、取引回数が最小になる「誰が誰に払う」を出す（債務相殺・貪欲法）。
+   totals は順位表と同じ最終値（試合＋裁判＋優勝予想 全部込み）＝順位表の金額と一致する。
+   がんひょんも含む（実際に金が動くため）。常時表示。 */
+function renderSettlement(totals){
+  const box = document.getElementById('settlementPanel');
+  if(!box) return;
+  const players = state.players || [];
+  /* net をコピー（四捨五入残差は1ペリカ未満扱いで無視） */
+  const net = {};
+  players.forEach(p=>{ net[p] = Math.round(totals[p]||0); });
+
+  const anyMoney = players.some(p=>Math.abs(net[p])>=1);
+  if(!anyMoney){
+    box.innerHTML = `<div class="settle-done">✅ まだ精算するもんは無いで（全員±0）</div>`;
+    return;
+  }
+
+  /* 現在の収支一覧 */
+  const ranked = [...players].sort((a,b)=>net[b]-net[a]);
+  const netRows = ranked.map(p=>{
+    const v = net[p];
+    const cls = v>0?'yen-plus':v<0?'yen-minus':'yen-zero';
+    return `<div class="settle-net-row">
+      <span class="settle-net-nm">${esc(p)}</span>
+      <span class="settle-net-v ${cls}">${v>0?'+':''}${peri(v)}</span>
+    </div>`;
+  }).join('');
+
+  /* 貪欲法：最大の受取(＋)と最大の支払(−)をぶつけて相殺していく */
+  const creditors = ranked.filter(p=>net[p] > 0).map(p=>({p, amt: net[p]}));
+  const debtors   = ranked.filter(p=>net[p] < 0).map(p=>({p, amt:-net[p]})); /* amtは正の借金額 */
+  creditors.sort((a,b)=>b.amt-a.amt);
+  debtors.sort((a,b)=>b.amt-a.amt);
+
+  const pays = [];
+  let ci=0, di=0, guard=0;
+  while(ci<creditors.length && di<debtors.length && guard++<1000){
+    const c = creditors[ci], d = debtors[di];
+    const x = Math.min(c.amt, d.amt);
+    if(x>0) pays.push({from:d.p, to:c.p, amt:x});
+    c.amt -= x; d.amt -= x;
+    if(c.amt<=0) ci++;
+    if(d.amt<=0) di++;
+  }
+
+  const payRows = pays.length
+    ? pays.map(t=>`<div class="settle-pay">
+        <span class="settle-from">${esc(t.from)}</span>
+        <span class="settle-arrow">→</span>
+        <span class="settle-to">${esc(t.to)}</span>
+        <span class="settle-amt">${peri(t.amt)}</span>
+      </div>`).join('')
+    : `<div class="settle-done">✅ 精算完了・払うもん無し</div>`;
+
+  const allDone = matchList().every(m=>m.result);
+  const note = allDone
+    ? `🏁 全試合終了。下の通りに払たら${pays.length}回のやり取りで全部チャラや`
+    : `⏳ まだ試合の途中や。これは「今この瞬間で清算するなら」の暫定表や。試合が進むと変わるで（${pays.length}回で相殺できる）`;
+
+  box.innerHTML =
+    `<div class="settle-note">${note}</div>
+     <div class="settle-head">現在の収支（順位表と同じ・全員込み）</div>
+     <div class="settle-net">${netRows}</div>
+     <div class="settle-head">最小回数の払い方（${pays.length}回）</div>
+     ${payRows}`;
+}
+
 function render(){
   if(!state) return;
   const { totals, records, moved, info, stats } = settle();
@@ -1390,6 +1476,7 @@ function render(){
   renderParticipation();
   renderTrend();
   renderBracket();
+  renderSettlement(totals);
 
   /* ── 戦績スタッツ：的中率・連勝・逆張り王 ── */
   const players = state.players||[];
@@ -1689,7 +1776,7 @@ function ticket(m, info){
       const marks = '①②③④⑤';
       const opts = [];
       for(let k=1;k<=n;k++) opts.push(marks[k-1]+' '+mdChoiceLabel(m,k,true));
-      const judgeNote = isKnockout(m) ? '（延長120分まで含めた最終スコアで判定・PKは点差に入れへん）' : '';
+      const judgeNote = isKnockout(m) ? (m.judgeBasis==='90' ? '（90分のみで判定・延長なし）' : '（延長120分まで含めた最終スコアで判定・PKは点差に入れへん）') : '';
       condBlock = `<div class="t-cond"><span class="q">条件</span>${esc(shortA)}vs${esc(shortB)} → 点差${n}択 ${rateTag}${chg}<br>
         <span class="vs">${opts.map(esc).join(' / ')} から選ぶ。当たった人で山分け${judgeNote}</span>${byLine}</div>`;
     } else {
@@ -2023,13 +2110,12 @@ function bind(){
 
       /* 賭け判定：
          タイプ3（勝ち上がり)は最終勝者
-         点差多択(md)は120分基準（従来どおり）
-         ハンデ2択・3択は judgeBasis で切替：'90'=90分スコアのみ／それ以外=延長120分込み（既定・従来動作） */
+         点差多択(md)・ハンデ2択・3択は judgeBasis で切替：'90'=90分スコアのみ／それ以外=延長120分込み（既定・従来動作） */
       let result;
       if(isAdvance(m)){
         result = advWinner;
       } else if(isMd(m)){
-        result = judge(m, judgeA, judgeB);
+        result = (m.judgeBasis === '90') ? judge(m, a90, b90) : judge(m, judgeA, judgeB);
       } else if(m.judgeBasis === '90'){
         result = judge(m, a90, b90);
       } else {
@@ -2047,7 +2133,7 @@ function bind(){
       else wName = (result==='A'?shortA:shortB)+' 側の勝ち';
 
       const advName = advWinner==='A'?shortA:shortB;
-      const basisNote = (!isAdvance(m) && !isMd(m)) ? `\n判定基準：${m.judgeBasis==='90'?'90分のみ':'延長120分込み'}` : '';
+      const basisNote = (!isAdvance(m)) ? `\n判定基準：${m.judgeBasis==='90'?'90分のみ':'延長120分込み'}` : '';
       if(!await ask(`記帳内容：\n90分 ${a90}-${b90}（${decidedBy}決着）\n勝ち上がり：${advName}\n賭け判定：${wName}${basisNote}\nこれで記帳する？（取消できへん）`)) return;
       const by = await whoAmI();
       if(!by) return;
@@ -2072,7 +2158,16 @@ function bind(){
           db.ref(`kakebo/matches/${target.id}`).update({ [teamField]: loseTeam });
         }
       }
-      toast('記帳した（勝者を次へ送ったで）');
+      /* 決勝を記帳したら優勝国を自動セット → 優勝予想が自動精算される。
+         チーム名 "🇫🇷 フランス" から旗を外して国名だけ保存（championSettle が国名で判定） */
+      if(m.round==='final'){
+        const champTeam = advWinner==='A' ? m.teamA : m.teamB;
+        const champCountry = champTeam.split(' ').slice(1).join(' ') || champTeam;
+        db.ref('kakebo/champion').set(champCountry);
+        toast(`記帳した。優勝 ${champCountry} で優勝予想も精算したで🏆`);
+      } else {
+        toast('記帳した（勝者を次へ送ったで）');
+      }
     };
   });
   document.querySelectorAll('[data-sgo]').forEach(b=>{
@@ -2133,8 +2228,8 @@ function bind(){
       const jbsel = document.querySelector(`[data-cjbasis="${mid}"]`);
       if(row) row.style.display = (sel.value==='hc') ? 'flex' : 'none';
       if(mrow) mrow.style.display = (sel.value==='md') ? 'flex' : 'none';
-      /* 判定基準はハンデ2択・3択だけ有効。3択は90分を既定に、ハンデは120分を既定に寄せとく */
-      if(jbrow) jbrow.style.display = (sel.value==='hc' || sel.value==='3way') ? 'flex' : 'none';
+      /* 判定基準はハンデ2択・3択・点差多択で有効（advは最終結果なので無関係）。3択は90分を既定、他は120分を既定 */
+      if(jbrow) jbrow.style.display = (sel.value==='hc' || sel.value==='3way' || sel.value==='md') ? 'flex' : 'none';
       if(jbsel) jbsel.value = (sel.value==='3way') ? '90' : '120';
     };
   });
@@ -2157,8 +2252,8 @@ function bind(){
       }else if(mode==='md'){
         const ct = document.querySelector(`[data-mteam="${mid}"]`).value;
         const st = Number(document.querySelector(`[data-msteps="${mid}"]`).value);
-        db.ref(`kakebo/matches/${mid}`).update({ mode:'md', condTeam:ct, margin:null, steps:st, rate, condBy:setter });
-        toast(`点差${st}択・${peri(rate)}でセット、受付開始や`);
+        db.ref(`kakebo/matches/${mid}`).update({ mode:'md', condTeam:ct, margin:null, steps:st, rate, judgeBasis, condBy:setter });
+        toast(`点差${st}択・${peri(rate)}・${judgeBasis==='90'?'90分判定':'120分判定'}でセット、受付開始や`);
       }else{
         const ct = document.querySelector(`[data-cteam="${mid}"]`).value;
         const mg = Number(document.querySelector(`[data-cmargin="${mid}"]`).value);
