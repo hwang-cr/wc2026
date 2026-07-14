@@ -391,7 +391,7 @@
           🔒 名前・メンバーの変更は<b>管理人（さんふぁん）専用PIN</b>が要る。なりすまし・収支すり替え防止や。<br>
           ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに1,000ペリカ</b>払う（例：1人外して2人的中 → 外した人は2,000ペリカ払い）。全員同じ選択 or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
           目隠し投票：締切までは誰がどっちに賭けたか・成立してるかは全部非公開。「投票したか」と投票数だけ見える（自分の選択は自分だけ見える）。締切が来たら全公開＋人気メーターも開票。<br>
-          締切：キックオフ15分前まで変更可能。それ以降はロック＆開票。<br>
+          締切：キックオフ15分前まで変更可能。それ以降はロック＆開票。<b>準決勝・3位決定戦・決勝だけは「試合前日の21時（日本時間）」が締切</b>や。試合が早朝やから前の晩で締めるで。<br>
           賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。レートは千刻みで、グループ〜ラウンド32は最大5,000、ラウンド16=6,000／準々決勝=7,000／準決勝=8,000／3位決定戦=9,000／決勝=10,000まで。条件・スコアを設定した人は記録される。3択も精算は同じで、当たった人で実質山分け。<br>
           PIN：初めて自分の行を触るとき4〜8桁のPINを設定する。以降その行はPINを知ってる本人しか触れん（一度通した端末は次から入力不要）。PIN忘れたら管理人（ふぁんさ）に言うてリセットしてもらえ。<br>
           ⚖️裁判所：問題発言したやつを起訴（起訴人はPIN確認＆記録される）。①予審1時間「この裁判いるか？」を受理/却下で投票→受理多数で本審へ、却下多数・同点・3人未満は廃案。②本審3時間で有罪/無罪を投票→3人以上・過半数で判決、同点/3人未満はノーゲーム。当事者は投票不可、内訳は締切まで非公開（誰が入れたかは永久に秘密、票数だけ開票）。有罪→被告それぞれが原告それぞれに1,000ペリカずつ／無罪→原告それぞれが被告それぞれに1,000ペリカずつ（冤罪の罰）。有罪は1回で前科。却下2回でその起訴人は全員に1,000ペリカずつ罰金＋起訴BAN（以後起訴でけへん）。廃案も晒される。<br>
@@ -835,7 +835,21 @@ function matchRate(m){
   return (typeof m.rate==='number' && m.rate>=1000 && m.rate<=max && m.rate%1000===0) ? m.rate : 1000;
 }
 function peri(n){ return Number(n).toLocaleString()+'ペリカ'; }
-function deadline(m){ return m.kickoff - 15*60*1000; }
+/* 締切。通常はキックオフ15分前。
+   準決勝以降（sf/tp/final）は「試合前日の21:00（日本時間）」に締切る。
+   ※準決勝以降は試合が早朝やから、前日の夜で締めて当日は朝まで触れんようにする */
+const LATE_ROUNDS = ['sf','tp','final'];
+function deadline(m){
+  if(m && LATE_ROUNDS.includes(m.round)){
+    /* キックオフのJST日付を出して、その「前日21:00 JST」を返す */
+    const d = new Date(m.kickoff + 9*3600000);      /* JSTの壁時計に変換 */
+    const y = d.getUTCFullYear(), mo = d.getUTCMonth(), day = d.getUTCDate();
+    /* JST当日00:00 のUTCエポック → そこから前日21:00 = -3時間 */
+    const jstMidnight = Date.UTC(y, mo, day) - 9*3600000;
+    return jstMidnight - 3*3600000;
+  }
+  return m.kickoff - 15*60*1000;
+}
 function isLocked(m){ return Date.now() > deadline(m); }
 function kicked(m){ return Date.now() > m.kickoff; }
 
@@ -1943,7 +1957,7 @@ function renderCountdowns(){
   document.querySelectorAll('[data-dl]').forEach(el=>{
     const m = (state.matches||{})[el.dataset.dl];
     if(!m) return;
-    const remain = fmtRemain((m.kickoff - 15*60*1000)-Date.now());
+    const remain = fmtRemain(deadline(m)-Date.now());
     if(!remain){ render(); return; }
     el.innerHTML = `受付中<br>締切まで ${remain}`;
   });
