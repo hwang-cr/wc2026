@@ -1511,9 +1511,16 @@ function questCard(q, info){
       : `<div class="deadline dl-closed">締切済み・ロック</div>`;
   }
 
-  /* 投票行（全公開・Yes/No） */
+  /* 目隠し判定：blind かつ 締切前は「誰がどっちか」を隠す（自分の選択だけ自分に見える） */
+  const blind = !!q.blind;
+  const revealed = settled || locked;
+  const myIds = getIds();
+
+  /* 投票行（Yes/No）。目隠し時は自分以外の選択を出さん */
   const rows = players.map(p=>{
     const pick = q.picks[p] || null;
+    const mine = (state.pins && state.pins[p] && myIds[p]===state.pins[p]);
+    const showPick = !blind || revealed || mine;
     let mark = `<span class="p-mark"></span>`;
     if(settled && pick && info[q.id] && !info[q.id].void){
       mark = pick===q.result ? `<span class="p-mark mk-win">◎</span>` : `<span class="p-mark mk-lose">✕</span>`;
@@ -1525,8 +1532,8 @@ function questCard(q, info){
       mark = `<span class="p-mark" style="color:var(--green)">●</span>`;
     }
     const dis = (settled||locked) ? 'disabled' : '';
-    const onY = pick==='Y' ? 'on-A' : '';
-    const onN = pick==='N' ? 'on-B' : '';
+    const onY = (showPick && pick==='Y') ? 'on-A' : '';
+    const onN = (showPick && pick==='N') ? 'on-B' : '';
     return `<div class="pick-row">
       <div class="p-name">${esc(p)}</div>
       <button class="p-btn ${onY}" data-qv="Y" data-q="${q.id}" data-p="${esc(p)}" ${dis}>はい</button>
@@ -1535,16 +1542,19 @@ function questCard(q, info){
     </div>`;
   }).join('');
 
-  /* 集計メーター（全公開） */
+  /* 集計メーター。目隠し時は締切後だけ開票。締切前は投票数だけの非公開ライン */
   const cnt = {Y:0,N:0}; players.forEach(p=>{ if(q.picks[p]) cnt[q.picks[p]]++; });
   const tv = voted.length || 1;
-  const meter = voted.length ? `<div class="meter">
+  const showMeter = (!blind || revealed);
+  const meter = (showMeter && voted.length) ? `<div class="meter">
       <div class="meter-bar">
         <span style="width:${cnt.Y/tv*100}%;background:var(--win)"></span>
         <span style="width:${cnt.N/tv*100}%;background:#C0392B"></span>
       </div>
       <div class="meter-lbl"><span>はい ${cnt.Y}</span><span>いいえ ${cnt.N}</span></div>
     </div>` : '';
+  const blindLine = (blind && !revealed)
+    ? `<div class="blind-line">🔒 目隠し中：締切まで誰がどっちに賭けたかは非公開（${voted.length}/${players.length}人 投票済み）</div>` : '';
   const unvotedLine = (!settled && unvoted.length)
     ? `<div class="unvoted">⚠️ 未投票 ${unvoted.length}人：${unvoted.map(esc).join('・')}</div>` : '';
 
@@ -1553,7 +1563,7 @@ function questCard(q, info){
   const chg = (!settled && !locked)
     ? ` <button class="cond-chg" data-qedit="${q.id}">変更</button> <button class="cond-chg" data-qdel="${q.id}" style="color:#C0392B;border-color:#F0CFC9">取消</button>` : '';
   const condBlock = `<div class="t-cond">
-      <span class="quest-q">特別クエスト・${qSideLabel('Y')}/${qSideLabel('N')} <span class="rate-tag">1口 ${peri(rate)}</span>${chg}</span>
+      <span class="quest-q">特別クエスト・${qSideLabel('Y')}/${qSideLabel('N')} <span class="rate-tag">1口 ${peri(rate)}</span>${blind?' <span class="rate-tag" style="background:#7A4FA3">🔒目隠し</span>':''}${chg}</span>
       <span class="quest-title">${esc(q.title)}</span>${creator}
     </div>
     <div class="quest-edit" id="qedit-${q.id}" style="display:none">
@@ -1591,7 +1601,7 @@ function questCard(q, info){
       <div class="t-date">締切 ${fmtDate(q.deadline)}</div></div>
       ${dl}
     </div>
-    <div class="t-body">${condBlock}${rows}${meter}${unvotedLine}</div>
+    <div class="t-body">${condBlock}${rows}${meter}${blindLine}${unvotedLine}</div>
     <div class="t-foot">${foot}</div>
   </div>`;
 }
@@ -1657,6 +1667,11 @@ function renderNewQuestForm(){
       <input id="nqDeadline" type="datetime-local" value="${nowJstLocal()}"></div>
     <div class="nt-field"><label>レート（1口）</label>
       <select id="nqRate">${[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000].map(r=>`<option value="${r}">${r.toLocaleString()}ペリカ</option>`).join('')}</select></div>
+    <div class="nt-field"><label>目隠し投票</label>
+      <select id="nqBlind">
+        <option value="1">する（締切まで誰がどっちか非公開）</option>
+        <option value="0">しない（最初から全公開）</option>
+      </select></div>
     <button class="btn-main" id="nqSubmit">この内容でクエストを作る</button>
     <p class="note" style="margin-top:8px">誰でも作れる。締切までは投票もお題も変更OK（お題変えたら投票リセット）。締切後は全ロック。投票は最初から全公開や。</p>
   `;
@@ -1664,16 +1679,17 @@ function renderNewQuestForm(){
     const title = (f.querySelector('#nqTitle').value||'').trim();
     const dlv = f.querySelector('#nqDeadline').value;
     const rate = Number(f.querySelector('#nqRate').value);
+    const blind = f.querySelector('#nqBlind').value === '1';
     if(!title){ toast('お題を入れてや'); return; }
     const dl = parseJstLocal(dlv);
     if(isNaN(dl)){ toast('締切を入れてや'); return; }
     if(dl <= Date.now()){ toast('締切は未来の時刻にしてや'); return; }
     const creator = await whoAmI();
     if(!creator){ return; }
-    if(!await ask(`「${title}」\n締切 ${fmtDate(dl)}\n1口 ${peri(rate)}\nこの内容で作る？`)) return;
+    if(!await ask(`「${title}」\n締切 ${fmtDate(dl)}\n1口 ${peri(rate)}\n目隠し：${blind?'する':'しない'}\nこの内容で作る？`)) return;
     const id = 'q'+Date.now();
     db.ref(`kakebo/quests/${id}`).set({
-      title, deadline: dl, rate, creator, created: Date.now(), picks:{}
+      title, deadline: dl, rate, blind, creator, created: Date.now(), picks:{}
     });
     f.style.display='none';
     document.getElementById('newQuestBtn').textContent='＋ 特別クエストを作る';
@@ -2385,7 +2401,7 @@ function bind(){
     else { f.style.display='none'; ntBtn.textContent='＋ 新しい裁判を起こす'; }
   };
 
-  document.querySelectorAll('.p-btn').forEach(b=>{
+  document.querySelectorAll('.p-btn[data-m]').forEach(b=>{
     b.onclick = async ()=>{
       const m = (state.matches||{})[b.dataset.m];
       if(!m || isLocked(m) || m.result || !hasCond(m)){ if(m&&isLocked(m)) toast('締切済み。もう変えられへん'); return; }
