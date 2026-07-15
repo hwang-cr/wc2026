@@ -225,6 +225,16 @@
   .settle-to{font-weight:900;font-size:14px}
   .settle-amt{margin-left:auto;font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amber-deep)}
   .settle-done{text-align:center;font-size:13px;font-weight:700;color:#1E6B4F;background:#EAF4EE;border:1px solid #BfE0CC;border-radius:8px;padding:14px 10px}
+  /* 特別クエスト */
+  .quest-q{font-size:10px;color:var(--amber-deep);letter-spacing:.12em;display:block;margin-bottom:2px;font-weight:900}
+  .quest-title{font-weight:900;font-size:16px;line-height:1.4}
+  .p-btn.qn.on-B{background:#C0392B;border-color:#C0392B;color:#fff}
+  .quest-edit{margin-top:10px;padding:10px;background:#FBFAF6;border:1px solid var(--card-edge);border-radius:7px}
+  .quest-edit label{font-size:11px;color:var(--ink-soft);font-weight:700;display:block;margin:6px 0 3px}
+  .quest-edit label:first-child{margin-top:0}
+  .quest-edit input,.quest-edit select{width:100%;padding:8px 10px;border:1px solid #CFC6AE;border-radius:5px;background:#fff;color:var(--ink);font-family:inherit;font-size:13px;font-weight:700}
+  .quest-votes{font-size:11px;color:var(--ink-soft);line-height:1.7;margin-top:6px}
+  .quest-votes b{color:var(--ink)}
   /* ブラケット */
   .bk-round{margin-bottom:14px}
   .bk-round-t{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;color:#7A4FA3;margin-bottom:8px;border-bottom:1px solid #E0D4EC;padding-bottom:3px}
@@ -317,6 +327,11 @@
     <div class="up-head">⚡ 本日の試合</div>
     <div id="todayMatches"></div>
 
+    <div class="up-head">🎯 特別クエスト</div>
+    <div id="todayQuests"></div>
+    <button class="btn-sub" id="newQuestBtn" style="margin-top:2px">＋ 特別クエストを作る</button>
+    <div id="newQuestForm" style="display:none;margin-top:10px"></div>
+
     <details class="fold" id="foldStandings">
       <summary>順位表</summary>
       <div class="fold-inner">
@@ -352,6 +367,11 @@
     <details class="fold" id="foldSettled">
       <summary>結果済み</summary>
       <div class="fold-inner"><div id="settledMatches"></div></div>
+    </details>
+
+    <details class="fold" id="foldQuestDone">
+      <summary>🎯 特別クエスト（結果済み）</summary>
+      <div class="fold-inner"><div id="questDonePanel"></div></div>
     </details>
 
     <details class="fold" id="foldBracket" style="display:none">
@@ -1417,6 +1437,250 @@ function renderSettlement(totals){
      ${payRows}`;
 }
 
+/* ══════════ 特別クエスト ══════════
+   試合に紐付かない自由なお題（Yes/No）。誰でも作れる。締切は手動。
+   目隠しナシ＝締切前でも誰がどっちに入れたか全公開。
+   締切後はお題・レート・投票 全部ロック。お題/レート変更したら投票は全リセット。
+   精算は既存と同じ山分け方式で、順位表・精算の総収支に合算。 */
+function questList(){
+  const qs = state.quests || {};
+  return Object.keys(qs).map(id=>{ const q=qs[id]; q.id=id; q.picks=q.picks||{}; return q; });
+}
+function questRate(q){
+  return (typeof q.rate==='number' && q.rate>=1000 && q.rate%1000===0) ? q.rate : 1000;
+}
+function questLocked(q){ return Date.now() > q.deadline; }
+/* JSTのYYYY-MM-DD文字列（今日判定用） */
+function jstYmd(ts){
+  const d = new Date(ts + 9*3600000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+}
+/* datetime-local文字列("YYYY-MM-DDTHH:MM")をJSTとして解釈してepochに */
+function parseJstLocal(v){
+  if(!v) return NaN;
+  return new Date(v + ':00+09:00').getTime();
+}
+/* 今のJSTをdatetime-local用文字列に（作成フォームの初期値） */
+function nowJstLocal(){
+  const d = new Date(Date.now() + 9*3600000);
+  const p = n=>String(n).padStart(2,'0');
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth()+1)}-${p(d.getUTCDate())}T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+
+/* 精算：結果が入ったクエストを既存と同じ山分けで計算。delta/info/movedを返す */
+function questSettle(){
+  const delta = {}; (state.players||[]).forEach(p=>delta[p]=0);
+  const info = {}; let moved = 0;
+  questList().filter(q=>q.result).forEach(q=>{
+    const rate = questRate(q);
+    const pickers = (state.players||[]).filter(p=>q.picks[p]);
+    const winners = pickers.filter(p=>q.picks[p]===q.result);
+    const losers  = pickers.filter(p=>q.picks[p]!==q.result);
+    if(winners.length===0 || losers.length===0){ info[q.id]={void:true,transfers:[]}; return; }
+    const transfers = [];
+    losers.forEach(l=>{
+      delta[l] -= winners.length*rate;
+      winners.forEach(w=>transfers.push(`${esc(l)} <span class="arrow">→</span> ${esc(w)}：${peri(rate)}`));
+    });
+    winners.forEach(w=>{ delta[w] += losers.length*rate; });
+    moved += winners.length*losers.length*rate;
+    info[q.id] = { void:false, transfers };
+  });
+  return { delta, info, moved };
+}
+
+/* Yes/No ラベル */
+function qSideLabel(s){ return s==='Y' ? 'はい' : s==='N' ? 'いいえ' : ''; }
+
+/* クエスト1枚（本日枠・未確定/締切待ち用） */
+function questCard(q, info){
+  const settled = !!q.result;
+  const locked = questLocked(q);
+  const rate = questRate(q);
+  const players = state.players||[];
+  const voted = players.filter(p=>q.picks[p]);
+  const unvoted = players.filter(p=>!q.picks[p]);
+
+  /* 締切表示 */
+  let dl;
+  if(settled){ dl=''; }
+  else {
+    const remain = fmtRemain(q.deadline - Date.now());
+    dl = remain
+      ? `<div class="deadline dl-open" data-qdl="${q.id}">受付中<br>締切まで ${remain}</div>`
+      : `<div class="deadline dl-closed">締切済み・ロック</div>`;
+  }
+
+  /* 投票行（全公開・Yes/No） */
+  const rows = players.map(p=>{
+    const pick = q.picks[p] || null;
+    let mark = `<span class="p-mark"></span>`;
+    if(settled && pick && info[q.id] && !info[q.id].void){
+      mark = pick===q.result ? `<span class="p-mark mk-win">◎</span>` : `<span class="p-mark mk-lose">✕</span>`;
+    } else if(settled && pick){
+      mark = `<span class="p-mark">−</span>`;
+    } else if(!pick){
+      mark = `<span class="p-mark" style="color:#C0392B;font-size:11px">未</span>`;
+    } else {
+      mark = `<span class="p-mark" style="color:var(--green)">●</span>`;
+    }
+    const dis = (settled||locked) ? 'disabled' : '';
+    const onY = pick==='Y' ? 'on-A' : '';
+    const onN = pick==='N' ? 'on-B' : '';
+    return `<div class="pick-row">
+      <div class="p-name">${esc(p)}</div>
+      <button class="p-btn ${onY}" data-qv="Y" data-q="${q.id}" data-p="${esc(p)}" ${dis}>はい</button>
+      <button class="p-btn qn ${onN}" data-qv="N" data-q="${q.id}" data-p="${esc(p)}" ${dis}>いいえ</button>
+      ${mark}
+    </div>`;
+  }).join('');
+
+  /* 集計メーター（全公開） */
+  const cnt = {Y:0,N:0}; players.forEach(p=>{ if(q.picks[p]) cnt[q.picks[p]]++; });
+  const tv = voted.length || 1;
+  const meter = voted.length ? `<div class="meter">
+      <div class="meter-bar">
+        <span style="width:${cnt.Y/tv*100}%;background:var(--win)"></span>
+        <span style="width:${cnt.N/tv*100}%;background:#C0392B"></span>
+      </div>
+      <div class="meter-lbl"><span>はい ${cnt.Y}</span><span>いいえ ${cnt.N}</span></div>
+    </div>` : '';
+  const unvotedLine = (!settled && unvoted.length)
+    ? `<div class="unvoted">⚠️ 未投票 ${unvoted.length}人：${unvoted.map(esc).join('・')}</div>` : '';
+
+  /* 条件行 */
+  const creator = q.creator ? `<br><span class="by-log">作成：${esc(q.creator)}${q.resultBy?`　/　記帳：${esc(q.resultBy)}`:''}</span>` : '';
+  const chg = (!settled && !locked)
+    ? ` <button class="cond-chg" data-qedit="${q.id}">変更</button> <button class="cond-chg" data-qdel="${q.id}" style="color:#C0392B;border-color:#F0CFC9">取消</button>` : '';
+  const condBlock = `<div class="t-cond">
+      <span class="quest-q">特別クエスト・${qSideLabel('Y')}/${qSideLabel('N')} <span class="rate-tag">1口 ${peri(rate)}</span>${chg}</span>
+      <span class="quest-title">${esc(q.title)}</span>${creator}
+    </div>
+    <div class="quest-edit" id="qedit-${q.id}" style="display:none">
+      <label>お題（変更すると投票は全リセット）</label>
+      <input data-qetitle="${q.id}" value="${esc(q.title)}" maxlength="60">
+      <label>レート</label>
+      <select data-qerate="${q.id}">
+        ${[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000].map(r=>`<option value="${r}" ${r===rate?'selected':''}>${r.toLocaleString()}ペリカ</option>`).join('')}
+      </select>
+      <button class="sc-go" data-qesave="${q.id}" style="margin-top:8px;width:100%">保存（投票リセット）</button>
+    </div>`;
+
+  /* フッター：締切後・結果未入力なら記帳UI */
+  let foot;
+  if(settled){
+    const i = info[q.id]||{void:true,transfers:[]};
+    const tag = i.void
+      ? `<span class="settled-tag void">${qSideLabel(q.result)}（ノーゲーム・対抗なし）</span>`
+      : `<span class="settled-tag">結果：${qSideLabel(q.result)}</span>`;
+    const tr = i.transfers.length ? `<div class="transfers">${i.transfers.join('<br>')}</div>` : '';
+    foot = `<div class="settled-band"><div class="settled-top">${tag}</div>${tr}</div>`;
+  } else if(locked){
+    foot = `<div class="res-label">締切終了。結果を記帳（誰でもOK・記録される）</div>
+      <div class="res-btns">
+        <button class="res-btn" data-qres="Y" data-q="${q.id}">はい だった</button>
+        <button class="res-btn" data-qres="N" data-q="${q.id}">いいえ だった</button>
+      </div>`;
+  } else {
+    foot = `<div class="waiting">締切が来たらここで結果記帳できる</div>`;
+  }
+
+  return `<div class="ticket">
+    <div class="t-head">
+      <div><div class="t-match">🎯 特別クエスト</div>
+      <div class="t-date">締切 ${fmtDate(q.deadline)}</div></div>
+      ${dl}
+    </div>
+    <div class="t-body">${condBlock}${rows}${meter}${unvotedLine}</div>
+    <div class="t-foot">${foot}</div>
+  </div>`;
+}
+
+/* 結果済みクエスト1枚（誰がどっちに入れたか含めて表示） */
+function questDoneCard(q, info){
+  const rate = questRate(q);
+  const players = state.players||[];
+  const i = info[q.id]||{void:true,transfers:[]};
+  const yes = players.filter(p=>q.picks[p]==='Y');
+  const no  = players.filter(p=>q.picks[p]==='N');
+  const tag = i.void
+    ? `<span class="settled-tag void">${qSideLabel(q.result)}（ノーゲーム）</span>`
+    : `<span class="settled-tag">結果：${qSideLabel(q.result)}</span>`;
+  const tr = i.transfers.length ? `<div class="transfers">${i.transfers.join('<br>')}</div>` : '';
+  const votes = `<div class="quest-votes">
+    はい：<b>${yes.length?yes.map(esc).join('・'):'なし'}</b><br>
+    いいえ：<b>${no.length?no.map(esc).join('・'):'なし'}</b></div>`;
+  return `<div class="ticket">
+    <div class="t-head"><div>
+      <div class="t-match" style="font-size:15px">🎯 ${esc(q.title)}</div>
+      <div class="t-date">締切 ${fmtDate(q.deadline)}　1口 ${peri(rate)}${q.creator?`　作成:${esc(q.creator)}`:''}${q.resultBy?`　記帳:${esc(q.resultBy)}`:''}</div>
+    </div></div>
+    <div class="t-body"><div class="settled-band"><div class="settled-top">${tag}</div>${tr}${votes}</div></div>
+  </div>`;
+}
+
+function renderQuests(info){
+  const todayBox = document.getElementById('todayQuests');
+  const doneBox  = document.getElementById('questDonePanel');
+  if(!todayBox || !doneBox) return;
+  const today = jstYmd(Date.now());
+  const all = questList();
+
+  const settled = all.filter(q=>q.result).sort((a,b)=>b.deadline-a.deadline);
+  const active  = all.filter(q=>!q.result && jstYmd(q.deadline) <= today).sort((a,b)=>a.deadline-b.deadline);
+  const future  = all.filter(q=>!q.result && jstYmd(q.deadline) >  today).sort((a,b)=>a.deadline-b.deadline);
+
+  let html = active.map(q=>questCard(q, info)).join('');
+  if(future.length){
+    html += future.map(q=>{
+      const remain = fmtRemain(q.deadline-Date.now());
+      return `<details class="future"><summary>${fmtDate(q.deadline).replace(' 日本時間','')} 締切　🎯 ${esc(q.title)}</summary>${questCard(q, info)}</details>`;
+    }).join('');
+  }
+  if(!active.length && !future.length){
+    html = `<div class="empty">今日の特別クエストは無いで。下のボタンから作れる</div>`;
+  }
+  todayBox.innerHTML = html;
+
+  doneBox.innerHTML = settled.length
+    ? settled.map(q=>questDoneCard(q, info)).join('')
+    : `<div class="empty">まだ結果の出た特別クエストは無い</div>`;
+}
+
+function renderNewQuestForm(){
+  const f = document.getElementById('newQuestForm');
+  if(!f) return;
+  f.innerHTML = `
+    <div class="nt-field"><label>お題（はい/いいえ で答えられる形に）</label>
+      <input id="nqTitle" placeholder="例：メッシが得点する？" maxlength="60"></div>
+    <div class="nt-field"><label>締切（日本時間）</label>
+      <input id="nqDeadline" type="datetime-local" value="${nowJstLocal()}"></div>
+    <div class="nt-field"><label>レート（1口）</label>
+      <select id="nqRate">${[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000].map(r=>`<option value="${r}">${r.toLocaleString()}ペリカ</option>`).join('')}</select></div>
+    <button class="btn-main" id="nqSubmit">この内容でクエストを作る</button>
+    <p class="note" style="margin-top:8px">誰でも作れる。締切までは投票もお題も変更OK（お題変えたら投票リセット）。締切後は全ロック。投票は最初から全公開や。</p>
+  `;
+  f.querySelector('#nqSubmit').onclick = async ()=>{
+    const title = (f.querySelector('#nqTitle').value||'').trim();
+    const dlv = f.querySelector('#nqDeadline').value;
+    const rate = Number(f.querySelector('#nqRate').value);
+    if(!title){ toast('お題を入れてや'); return; }
+    const dl = parseJstLocal(dlv);
+    if(isNaN(dl)){ toast('締切を入れてや'); return; }
+    if(dl <= Date.now()){ toast('締切は未来の時刻にしてや'); return; }
+    const creator = await whoAmI();
+    if(!creator){ return; }
+    if(!await ask(`「${title}」\n締切 ${fmtDate(dl)}\n1口 ${peri(rate)}\nこの内容で作る？`)) return;
+    const id = 'q'+Date.now();
+    db.ref(`kakebo/quests/${id}`).set({
+      title, deadline: dl, rate, creator, created: Date.now(), picks:{}
+    });
+    f.style.display='none';
+    document.getElementById('newQuestBtn').textContent='＋ 特別クエストを作る';
+    toast('特別クエスト作ったで🎯');
+  };
+}
+
 function render(){
   if(!state) return;
   const { totals, records, moved, info, stats } = settle();
@@ -1465,10 +1729,17 @@ function render(){
     if(totals[p]!=null) totals[p]+=champRes.delta[p];
   });
 
+  /* 特別クエストの精算を収支に合算 */
+  const questRes = questSettle();
+  let questMoved = questRes.moved;
+  Object.keys(questRes.delta).forEach(p=>{
+    if(totals[p]!=null) totals[p]+=questRes.delta[p];
+  });
+
   document.getElementById('statMatches').textContent = all.filter(m=>m.result).length;
   const remainEl = document.getElementById('statRemain');
   if(remainEl) remainEl.textContent = all.filter(m=>!m.result).length;
-  document.getElementById('statMoved').textContent = peri(moved+trialMoved+champMoved);
+  document.getElementById('statMoved').textContent = peri(moved+trialMoved+champMoved+questMoved);
   document.getElementById('statPlayers').textContent = (state.players||[]).length;
 
   const ranked = [...(state.players||[])].sort((a,b)=>totals[b]-totals[a]);
@@ -1490,6 +1761,7 @@ function render(){
   renderParticipation();
   renderTrend();
   renderBracket();
+  renderQuests(questRes.info);
   renderSettlement(totals);
 
   /* ── 戦績スタッツ：的中率・連勝・逆張り王 ── */
@@ -1961,6 +2233,14 @@ function renderCountdowns(){
     if(!remain){ render(); return; }
     el.innerHTML = `受付中<br>締切まで ${remain}`;
   });
+  /* 特別クエストの締切カウントダウン */
+  document.querySelectorAll('[data-qdl]').forEach(el=>{
+    const q = (state.quests||{})[el.dataset.qdl];
+    if(!q) return;
+    const remain = fmtRemain(q.deadline-Date.now());
+    if(!remain){ render(); return; }
+    el.innerHTML = `受付中<br>締切まで ${remain}`;
+  });
   /* 裁判の予審/本審の締切が来てたら再描画 */
   if(trialList().some(t=>{
     const a = Date.now()>t.preDeadline && Date.now()-t.preDeadline < 35000;
@@ -1975,6 +2255,77 @@ function renderPlayersEdit(){
 }
 
 function bind(){
+  /* ── 特別クエスト：作成フォーム開閉 ── */
+  const nqBtn = document.getElementById('newQuestBtn');
+  if(nqBtn) nqBtn.onclick = ()=>{
+    const f = document.getElementById('newQuestForm');
+    if(f.style.display==='none'){ f.style.display='block'; nqBtn.textContent='× 閉じる'; renderNewQuestForm(); }
+    else { f.style.display='none'; nqBtn.textContent='＋ 特別クエストを作る'; }
+  };
+  /* ── 特別クエスト：投票（Yes/No・全公開） ── */
+  document.querySelectorAll('[data-qv]').forEach(b=>{
+    b.onclick = async ()=>{
+      const q = (state.quests||{})[b.dataset.q];
+      if(!q){ return; }
+      if(questLocked(q)){ toast('締切済み。もう変えられへん'); return; }
+      const p = b.dataset.p, side = b.dataset.qv;
+      if(!await verifyPlayer(p)) return;
+      const q2 = (state.quests||{})[b.dataset.q];
+      if(!q2 || questLocked(q2) || q2.result){ toast('締切済み'); return; }
+      const ref = db.ref(`kakebo/quests/${b.dataset.q}/picks/${p}`);
+      if((q2.picks||{})[p]===side) ref.remove(); else ref.set(side);
+    };
+  });
+  /* ── 特別クエスト：結果記帳（締切後・誰でも） ── */
+  document.querySelectorAll('[data-qres]').forEach(b=>{
+    b.onclick = async ()=>{
+      const q = (state.quests||{})[b.dataset.q];
+      if(!q) return;
+      if(!questLocked(q)){ toast('まだ締切前や'); return; }
+      const side = b.dataset.qres;
+      if(!await ask(`「${q.title}」の結果は「${qSideLabel(side)}」で記帳する？（取消できへん）`)) return;
+      const by = await whoAmI();
+      if(!by) return;
+      db.ref(`kakebo/quests/${b.dataset.q}`).update({ result:side, resultBy:by });
+      toast('クエストを記帳した🎯');
+    };
+  });
+  /* ── 特別クエスト：お題・レート変更フォームの開閉 ── */
+  document.querySelectorAll('[data-qedit]').forEach(b=>{
+    b.onclick = ()=>{
+      const el = document.getElementById('qedit-'+b.dataset.qedit);
+      if(el) el.style.display = (el.style.display==='none') ? 'block' : 'none';
+    };
+  });
+  /* ── 特別クエスト：変更を保存（投票リセット） ── */
+  document.querySelectorAll('[data-qesave]').forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.dataset.qesave;
+      const q = (state.quests||{})[id];
+      if(!q || questLocked(q)){ toast('締切済み。変更でけへん'); return; }
+      const title = (document.querySelector(`[data-qetitle="${id}"]`).value||'').trim();
+      const rate = Number(document.querySelector(`[data-qerate="${id}"]`).value);
+      if(!title){ toast('お題を入れてや'); return; }
+      if(!await ask('お題／レートを変更する？\nこのクエストの投票は全部リセットされるで')) return;
+      db.ref(`kakebo/quests/${id}`).update({ title, rate, picks:null });
+      toast('変更した（投票リセット）');
+    };
+  });
+  /* ── 特別クエスト：取消（作成者のみ・締切前） ── */
+  document.querySelectorAll('[data-qdel]').forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.dataset.qdel;
+      const q = (state.quests||{})[id];
+      if(!q) return;
+      if(questLocked(q)){ toast('締切後は取り消せん'); return; }
+      const me = await whoAmI();
+      if(!me) return;
+      if(me !== q.creator){ toast('作成者本人しか取り消せんで'); return; }
+      if(!await ask(`「${q.title}」を取り消す？（戻せへん）`)) return;
+      db.ref(`kakebo/quests/${id}`).remove();
+      toast('クエストを取り消した');
+    };
+  });
   /* ── 裁判：判決の無効化（管理人のみ） ── */
   document.querySelectorAll('[data-tvoid]').forEach(b=>{
     b.onclick = async ()=>{
