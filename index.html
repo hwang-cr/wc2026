@@ -235,6 +235,26 @@
   .quest-edit input,.quest-edit select{width:100%;padding:8px 10px;border:1px solid #CFC6AE;border-radius:5px;background:#fff;color:var(--ink);font-family:inherit;font-size:13px;font-weight:700}
   .quest-votes{font-size:11px;color:var(--ink-soft);line-height:1.7;margin-top:6px}
   .quest-votes b{color:var(--ink)}
+  /* ===== テーマ曲セクション（ジャケット配色）===== */
+  .anthem{position:relative;margin:0 0 16px;border-radius:14px;padding:16px 16px 14px;overflow:hidden;
+    background:radial-gradient(120% 140% at 85% 0%, #39FF14 0%, #2BE30F 42%, #17B80C 100%);
+    box-shadow:0 6px 0 rgba(23,83,61,.35), 0 10px 22px rgba(23,120,10,.28);border:2px solid #0C5C08}
+  .anthem::before{content:'';position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;
+    background:radial-gradient(circle at 40% 40%, #FFE500 0 34%, #1B4FE0 35% 62%, transparent 63%);opacity:.55;transform:rotate(12deg);pointer-events:none}
+  .anthem::after{content:'';position:absolute;left:-24px;bottom:-34px;width:120px;height:120px;
+    background:radial-gradient(circle at 60% 40%, #1B4FE0 0 30%, transparent 31%),radial-gradient(circle at 30% 70%, #FFE500 0 26%, transparent 27%);opacity:.5;pointer-events:none}
+  .anthem-inner{position:relative;z-index:2}
+  .anthem-tag{display:inline-block;font-family:'Bebas Neue',sans-serif;letter-spacing:.14em;font-size:12px;color:#0C3D07;background:#FFE500;padding:2px 10px;border-radius:4px;border:1.5px solid #0C5C08;box-shadow:2px 2px 0 rgba(27,79,224,.9)}
+  .anthem-title{font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1;letter-spacing:.03em;color:#0A2E06;margin:10px 0 2px;text-shadow:2px 2px 0 #FFE500, 4px 4px 0 rgba(27,79,224,.85)}
+  .anthem-song{font-size:13px;font-weight:900;color:#0A2E06;margin-bottom:12px}
+  .anthem-song .artist{color:#12480d}
+  .anthem-play{display:flex;align-items:center;gap:10px;width:100%;background:#1B4FE0;color:#fff;border:2px solid #0A2E06;border-radius:10px;padding:12px 14px;font-family:inherit;font-weight:900;font-size:15px;cursor:pointer;box-shadow:3px 3px 0 #0A2E06;transition:transform .08s, box-shadow .08s}
+  .anthem-play:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #0A2E06}
+  .anthem-play .ico{width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:#FFE500;color:#0A2E06;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #0A2E06}
+  .anthem-play .sub{margin-left:auto;font-family:'Bebas Neue',sans-serif;letter-spacing:.1em;font-size:12px;color:#DFE8FF}
+  .anthem-embed{margin-top:12px;border-radius:10px;overflow:hidden;border:2px solid #0A2E06;display:none}
+  .anthem-embed.on{display:block}
+  .anthem-embed iframe{display:block;width:100%;aspect-ratio:16/9;border:0}
   /* ブラケット */
   .bk-round{margin-bottom:14px}
   .bk-round-t{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;color:#7A4FA3;margin-bottom:8px;border-bottom:1px solid #E0D4EC;padding-bottom:3px}
@@ -315,6 +335,20 @@
       <div class="stat"><div class="num" id="statPlayers">0</div><div class="lbl">メンバー</div></div>
     </div>
   </header>
+
+  <div class="anthem">
+    <div class="anthem-inner">
+      <span class="anthem-tag">🎵 俺らの2026 W杯 テーマ曲</span>
+      <div class="anthem-title">LUZ DEL SOL</div>
+      <div class="anthem-song"><span class="artist">Dragon Ash</span> feat. 大蔵 from ケツメイシ</div>
+      <button class="anthem-play" id="anthemPlay">
+        <span class="ico">▶</span>
+        再生する
+        <span class="sub">PLAY ANTHEM</span>
+      </button>
+      <div class="anthem-embed" id="anthemEmbed"></div>
+    </div>
+  </div>
 
   <div id="connWarn" style="display:none;background:#7A2E1D;color:#FFE3D6;font-size:12px;font-weight:700;line-height:1.7;padding:12px 14px;border-radius:8px;margin-bottom:16px">
     ⚠️ 共有帳簿に接続できてへん。このブラウザやと賭けが保存されへん。<br>
@@ -2803,6 +2837,29 @@ document.getElementById('rebuildBracketBtn').onclick = async ()=>{
     showErr('データベースに接続できへん：' + esc(err.message) + '<br>Realtime Databaseのルールが read/write とも true になってるか確認してや');
   });
   setInterval(renderCountdowns, 30000);
+})();
+
+/* ── テーマ曲プレイヤー（押すまでYouTubeは読み込まん／再押しで停止）── */
+(function anthem(){
+  const VIDEO_ID = 'XAH37Id_RDo';
+  const btn = document.getElementById('anthemPlay');
+  const em  = document.getElementById('anthemEmbed');
+  if(!btn || !em) return;
+  const ico = btn.querySelector('.ico');
+  btn.onclick = ()=>{
+    const opening = !em.classList.contains('on');
+    if(opening){
+      em.innerHTML = `<iframe src="https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&rel=0&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      em.classList.add('on');
+      ico.textContent = '⏸';
+      btn.childNodes[2].textContent = ' 閉じる ';
+    } else {
+      em.classList.remove('on');
+      em.innerHTML = '';   /* iframe削除で再生停止 */
+      ico.textContent = '▶';
+      btn.childNodes[2].textContent = ' 再生する ';
+    }
+  };
 })();
 
 </script>
