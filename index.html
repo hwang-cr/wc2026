@@ -255,6 +255,50 @@
   .anthem-embed{margin-top:12px;border-radius:10px;overflow:hidden;border:2px solid #0A2E06;display:none}
   .anthem-embed.on{display:block}
   .anthem-embed iframe{display:block;width:100%;aspect-ratio:16/9;border:0}
+  /* ===== 大会総括フィナーレ（明るい紙×左揃え罫線×透かし文字）===== */
+  #finalePanel:empty{display:none}
+  .finale{position:relative;margin:16px 0 4px;padding:24px 6px 18px;overflow:hidden;border-top:2px solid var(--green);border-bottom:2px solid var(--green)}
+  .fdust{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+  .fdust i{position:absolute;bottom:-10px;border-radius:50%;background:#D9B44A;opacity:0;box-shadow:0 0 6px 1px rgba(217,180,74,.4);animation:frise linear infinite}
+  @keyframes frise{0%{transform:translateY(0);opacity:0}12%{opacity:.7}88%{opacity:.5}100%{transform:translateY(-640px) translateX(12px);opacity:0}}
+  .fi{position:relative;z-index:2}
+  .kchip{display:inline-block;font-family:'Bebas Neue',sans-serif;letter-spacing:.2em;font-size:11px;color:var(--chalk-dim);border:1px solid var(--line);padding:3px 9px;border-radius:2px}
+  .fsec-k{font-family:'Bebas Neue',sans-serif;letter-spacing:.22em;font-size:12px;color:var(--chalk-dim);padding-left:.22em;margin-bottom:8px}
+  .fdot{border-top:1px dashed var(--line);margin:20px 0}
+  .fchamp{position:relative;overflow:hidden;padding-bottom:4px}
+  .fchamp::after{content:'CHAMPION';position:absolute;right:-8px;bottom:-26px;font-family:'Bebas Neue',sans-serif;font-size:92px;line-height:1;color:rgba(30,107,79,.06);letter-spacing:.02em;pointer-events:none}
+  .fchamp-k{font-family:'Bebas Neue',sans-serif;letter-spacing:.24em;font-size:12px;color:#B8912F;margin:10px 0 2px;padding-left:.24em}
+  .fchamp-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(56px,19vw,92px);line-height:.88;color:var(--chalk);letter-spacing:.01em;position:relative}
+  .fchamp-name .accent{color:var(--green)}
+  .fchamp-meta{display:flex;align-items:baseline;gap:12px;margin-top:8px;flex-wrap:wrap}
+  .fchamp-yen{font-family:'Bebas Neue',sans-serif;font-size:23px;color:var(--green)}
+  .fchamp-cap{font-size:11px;color:var(--chalk-dim);letter-spacing:.06em;font-weight:700}
+  .frow{display:flex;align-items:baseline;gap:14px;padding:11px 6px;border-bottom:1px solid var(--line)}
+  .frow:last-child{border-bottom:none}
+  .frk{font-family:'Bebas Neue',sans-serif;font-size:24px;width:28px;color:#BFC3BD;line-height:1}
+  .frow.ftop .frk{color:#B8912F}
+  .fnm{flex:1;font-weight:900;font-size:15px}
+  .fyen{font-family:'Bebas Neue',sans-serif;font-size:19px}
+  .fplus{color:var(--green)}.fminus{color:#C0392B}
+  .farow{display:flex;align-items:baseline;gap:14px;padding:10px 6px;border-bottom:1px solid var(--line)}
+  .farow:last-child{border-bottom:none}
+  .fat{font-size:11px;color:var(--chalk-dim);font-weight:900;letter-spacing:.04em;width:96px;flex:0 0 96px}
+  .fanm{font-weight:900;font-size:14px}
+  .fad{font-size:10px;color:var(--chalk-dim);margin-top:1px}
+  .fnums{display:flex;gap:8px;margin-top:6px}
+  .fnums div{flex:1}
+  .fnums .n{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--chalk);line-height:1}
+  .fnums .l{font-size:9px;color:var(--chalk-dim);letter-spacing:.1em;margin-top:4px;font-weight:700}
+  .fnext{position:relative;padding:4px 6px 0;overflow:hidden}
+  .fnext::after{content:'EURO 28';position:absolute;right:-6px;bottom:-20px;font-family:'Bebas Neue',sans-serif;font-size:104px;line-height:1;color:rgba(30,107,79,.06);letter-spacing:.02em;pointer-events:none}
+  .fnext>*{position:relative}
+  .fnext .fntitle{font-family:'Bebas Neue',sans-serif;font-size:clamp(46px,15vw,64px);line-height:1;color:var(--chalk);margin:14px 0 0}
+  .fnext .fntitle .yr{color:#5FBF95}
+  .fnext .fnhosts{font-size:10px;letter-spacing:.16em;color:var(--chalk-dim);font-weight:700;margin-top:14px}
+  .fnext .fnflags{font-size:17px;letter-spacing:3px;margin-top:10px}
+  .fnext .fnsay{font-size:12px;color:var(--chalk-dim);line-height:1.9;margin-top:16px;font-weight:700}
+  .fnext .fnsay b{color:var(--chalk)}
+  .ffoot{font-size:11px;color:var(--chalk-dim);margin-top:20px;line-height:1.9;font-weight:700;padding:0 6px}
   /* ブラケット */
   .bk-round{margin-bottom:14px}
   .bk-round-t{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.06em;color:#7A4FA3;margin-bottom:8px;border-bottom:1px solid #E0D4EC;padding-bottom:3px}
@@ -336,6 +380,8 @@
     </div>
   </header>
 
+  <div id="finalePanel"></div>
+
   <div class="anthem">
     <div class="anthem-inner">
       <span class="anthem-tag">🎵 俺らの2026 W杯 テーマ曲</span>
@@ -358,7 +404,7 @@
   <div id="loading" class="loading">帳簿を開いてる…</div>
 
   <div id="app" style="display:none">
-    <div class="up-head">⚡ 本日の試合</div>
+    <div class="up-head" id="todayHead">⚡ 本日の試合</div>
     <div id="todayMatches"></div>
 
     <div class="up-head">🎯 特別クエスト</div>
@@ -445,7 +491,7 @@
           🔒 名前・メンバーの変更は<b>管理人（さんふぁん）専用PIN</b>が要る。なりすまし・収支すり替え防止や。<br>
           ルール：チームを選んで賭ける。外した人は<b>当てた人それぞれに1,000ペリカ</b>払う（例：1人外して2人的中 → 外した人は2,000ペリカ払い）。全員同じ選択 or 賭けたのが片側だけならノーゲーム。不参加は自由、金も動かん。<br>
           目隠し投票：締切までは誰がどっちに賭けたか・成立してるかは全部非公開。「投票したか」と投票数だけ見える（自分の選択は自分だけ見える）。締切が来たら全公開＋人気メーターも開票。<br>
-          締切：キックオフ15分前まで変更可能。それ以降はロック＆開票。<b>準決勝・3位決定戦・決勝だけは「試合前日の21時（日本時間）」が締切</b>や。試合が早朝やから前の晩で締めるで。<br>
+          締切：キックオフ15分前まで変更可能。それ以降はロック＆開票。<b>3位決定戦だけはキックオフ5分前</b>、準決勝は「試合前日の21時（日本時間）」やった。<br>
           賭けの種類：試合ごとに「ハンデ付き2択」か「ハンデなし3択（勝ち/分け/負け）」を選べる。レートは千刻みで、グループ〜ラウンド32は最大5,000、ラウンド16=6,000／準々決勝=7,000／準決勝=8,000／3位決定戦=9,000／決勝=10,000まで。条件・スコアを設定した人は記録される。3択も精算は同じで、当たった人で実質山分け。<br>
           PIN：初めて自分の行を触るとき4〜8桁のPINを設定する。以降その行はPINを知ってる本人しか触れん（一度通した端末は次から入力不要）。PIN忘れたら管理人（ふぁんさ）に言うてリセットしてもらえ。<br>
           ⚖️裁判所：問題発言したやつを起訴（起訴人はPIN確認＆記録される）。①予審1時間「この裁判いるか？」を受理/却下で投票→受理多数で本審へ、却下多数・同点・3人未満は廃案。②本審3時間で有罪/無罪を投票→3人以上・過半数で判決、同点/3人未満はノーゲーム。当事者は投票不可、内訳は締切まで非公開（誰が入れたかは永久に秘密、票数だけ開票）。有罪→被告それぞれが原告それぞれに1,000ペリカずつ／無罪→原告それぞれが被告それぞれに1,000ペリカずつ（冤罪の罰）。有罪は1回で前科。却下2回でその起訴人は全員に1,000ペリカずつ罰金＋起訴BAN（以後起訴でけへん）。廃案も晒される。<br>
@@ -892,7 +938,8 @@ function peri(n){ return Number(n).toLocaleString()+'ペリカ'; }
 /* 締切。通常はキックオフ15分前。
    準決勝以降（sf/tp/final）は「試合前日の21:00（日本時間）」に締切る。
    ※準決勝以降は試合が早朝やから、前日の夜で締めて当日は朝まで触れんようにする */
-const LATE_ROUNDS = ['sf','tp','final'];
+const LATE_ROUNDS = ['sf'];   /* 前日21:00締切（準決勝のみ） */
+const LATE5_ROUNDS = ['tp'];  /* 3位決定戦だけキックオフ5分前。決勝は通常どおり15分前 */
 function deadline(m){
   if(m && LATE_ROUNDS.includes(m.round)){
     /* キックオフのJST日付を出して、その「前日21:00 JST」を返す */
@@ -902,6 +949,7 @@ function deadline(m){
     const jstMidnight = Date.UTC(y, mo, day) - 9*3600000;
     return jstMidnight - 3*3600000;
   }
+  if(m && LATE5_ROUNDS.includes(m.round)) return m.kickoff - 5*60*1000;
   return m.kickoff - 15*60*1000;
 }
 function isLocked(m){ return Date.now() > deadline(m); }
@@ -1731,6 +1779,128 @@ function renderNewQuestForm(){
   };
 }
 
+/* ══════════ 大会総括フィナーレ ══════════
+   決勝(round==='final')が記帳されたら発動。最上部に総括を出し、本日の試合は隠す。
+   数字は全部 render() で確定した実データ（totals/stats/gc/各moved）を受け取る。 */
+function fmtSignYen(v){ return (v>0?'+':v<0?'−':'') + Math.abs(Math.round(v)).toLocaleString(); }
+function renderFinale(ctx){
+  const box = document.getElementById('finalePanel');
+  if(!box) return;
+  if(!ctx.tournamentOver){ box.innerHTML=''; return; }
+
+  const { ranked, totals, stats, gc } = ctx;
+  const players = state.players||[];
+
+  /* 初代チャンピオン＝最終収支1位（同点は連名） */
+  const topVal = totals[ranked[0]];
+  const champs = ranked.filter(p=>Math.round(totals[p])===Math.round(topVal));
+  let champName;
+  if(champs.length===1){
+    const arr = Array.from(champs[0]);
+    const last = arr.pop();
+    champName = `${esc(arr.join(''))}<span class="accent">${esc(last)}</span>`;
+  } else {
+    champName = champs.map(esc).join('・');
+  }
+  const playedCount = ctx.playedCount;
+
+  /* 順位表（全員） */
+  const standRows = ranked.map((p,i)=>{
+    const v = totals[p];
+    return `<div class="frow ${i===0?'ftop':''}">
+      <div class="frk">${i+1}</div>
+      <div class="fnm">${esc(p)}</div>
+      <div class="fyen ${v>0?'fplus':v<0?'fminus':''}">${fmtSignYen(v)}</div>
+    </div>`;
+  }).join('');
+
+  /* HALL OF FAME（statsPanelと同じ集計） */
+  const awards = [];
+  const hitRanked = [...players].filter(p=>stats[p].picked>0)
+    .sort((a,b)=>(stats[b].hit/stats[b].picked)-(stats[a].hit/stats[a].picked) || stats[b].picked-stats[a].picked);
+  if(hitRanked.length){
+    const p=hitRanked[0], s=stats[p];
+    awards.push({t:'🎯 的中率王', nm:p, d:`${Math.round(s.hit/s.picked*100)}%（${s.hit}/${s.picked}的中）`});
+  }
+  const loneRanked = [...players].filter(p=>stats[p].lone>0).sort((a,b)=>stats[b].lone-stats[a].lone);
+  if(loneRanked.length){
+    const p=loneRanked[0];
+    awards.push({t:'😎 逆張り王', nm:p, d:`1人で張った ${stats[p].lone}回`});
+  }
+  const bestStreak = Math.max(0, ...players.map(p=>stats[p].bestStreak));
+  if(bestStreak>=2){
+    const holders = players.filter(p=>stats[p].bestStreak===bestStreak);
+    awards.push({t:'⚡ 最高連勝', nm:holders.join('・'), d:`${bestStreak}連勝`});
+  }
+  const worstLoss = Math.max(0, ...players.map(p=>stats[p].bestLoss));
+  if(worstLoss>=2){
+    const holders = players.filter(p=>stats[p].bestLoss===worstLoss);
+    awards.push({t:'🥶 最高連敗', nm:holders.join('・'), d:`${worstLoss}連敗`});
+  }
+  const perfect = [...players].filter(p=>stats[p].eligible>0 && stats[p].joined===stats[p].eligible);
+  if(perfect.length){
+    awards.push({t:'🙋 皆勤賞', nm:perfect.join('・'), d:'参加率 100%'});
+  }
+  const guiltyMax = Math.max(0, ...players.map(p=>gc[p]||0));
+  if(guiltyMax>=1){
+    const holders = players.filter(p=>(gc[p]||0)===guiltyMax);
+    awards.push({t:'⚖️ 前科王', nm:holders.join('・'), d:`有罪 ${guiltyMax}回`});
+  }
+  const awardRows = awards.map(a=>`<div class="farow">
+    <div class="fat">${a.t}</div>
+    <div><div class="fanm">${esc(a.nm)}</div><div class="fad">${esc(a.d)}</div></div>
+  </div>`).join('');
+
+  /* THE NUMBERS */
+  const movedTxt = ctx.totalMoved>=1e6 ? (ctx.totalMoved/1e6).toFixed(1)+'M' : ctx.totalMoved.toLocaleString();
+
+  box.innerHTML = `<div class="finale"><div class="fdust" id="fdust"></div><div class="fi">
+    <span class="kchip">FINAL WHISTLE · 2026.07.20</span>
+    <div class="fchamp">
+      <div class="fchamp-k">★ 初代チャンピオン</div>
+      <div class="fchamp-name">${champName}</div>
+      <div class="fchamp-meta">
+        <span class="fchamp-yen">${fmtSignYen(topVal)} ペリカ</span>
+        <span class="fchamp-cap">全${playedCount}試合の頂点</span>
+      </div>
+    </div>
+    <div class="fdot"></div>
+    <div class="fsec-k">FINAL STANDINGS</div>
+    <div>${standRows}</div>
+    ${awardRows ? `<div class="fdot"></div><div class="fsec-k">HALL OF FAME</div><div>${awardRows}</div>` : ''}
+    <div class="fdot"></div>
+    <div class="fsec-k">THE NUMBERS</div>
+    <div class="fnums">
+      <div><div class="n">${playedCount}</div><div class="l">試合</div></div>
+      <div><div class="n">${movedTxt}</div><div class="l">総額</div></div>
+      <div><div class="n">${players.length}</div><div class="l">戦士</div></div>
+      <div><div class="n">${ctx.trialCount}</div><div class="l">裁判</div></div>
+    </div>
+    <div class="fdot"></div>
+    <div class="fnext">
+      <span class="kchip">SEE YOU AGAIN IN</span>
+      <div class="fntitle">EURO <span class="yr">2028</span></div>
+      <div class="fnhosts">ENGLAND · SCOTLAND · WALES · IRELAND</div>
+      <div class="fnflags">🏴󠁧󠁢󠁥󠁮󠁧󠁿 🏴󠁧󠁢󠁳󠁣󠁴󠁿 🏴󠁧󠁢󠁷󠁬󠁳󠁿 🇮🇪</div>
+      <div class="fnsay">2年後、また同じ <b>${players.length}人</b> で。<br>次の伝説を賭けよう。</div>
+    </div>
+    <div class="ffoot">🎵 テーマ曲「Luz del sol」とともに、2026年の夏をありがとう。<br>この記録は永久に残す。</div>
+  </div></div>`;
+
+  /* 金の粒 */
+  const dust = document.getElementById('fdust');
+  if(dust){
+    for(let i=0;i<20;i++){
+      const p=document.createElement('i');
+      p.style.left=Math.random()*100+'%';
+      const s=2.5+Math.random()*2.5; p.style.width=s+'px'; p.style.height=s+'px';
+      p.style.animationDuration=(8+Math.random()*8)+'s';
+      p.style.animationDelay=(-Math.random()*12)+'s';
+      dust.appendChild(p);
+    }
+  }
+}
+
 function render(){
   if(!state) return;
   const { totals, records, moved, info, stats } = settle();
@@ -1813,6 +1983,23 @@ function render(){
   renderBracket();
   renderQuests(questRes.info);
   renderSettlement(totals);
+
+  /* 大会総括：決勝が記帳されたら発動。本日の試合を隠して最上部にフィナーレ */
+  const finalM = all.find(m=>m.round==='final');
+  const tournamentOver = !!(finalM && finalM.result);
+  const rankedFinal = [...(state.players||[])].sort((a,b)=>totals[b]-totals[a]);
+  renderFinale({
+    tournamentOver,
+    ranked: rankedFinal,
+    totals, stats, gc,
+    playedCount: all.filter(m=>m.result).length,
+    totalMoved: moved+trialMoved+champMoved+questMoved,
+    trialCount: trialList().length
+  });
+  const todayHead = document.getElementById('todayHead');
+  const todayBox = document.getElementById('todayMatches');
+  if(todayHead) todayHead.style.display = tournamentOver ? 'none' : '';
+  if(todayBox)  todayBox.style.display  = tournamentOver ? 'none' : '';
 
   /* ── 戦績スタッツ：的中率・連勝・逆張り王 ── */
   const players = state.players||[];
